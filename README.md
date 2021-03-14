@@ -7,4 +7,4 @@ This project parses XML documents containing ICD-10 medical codes provided by th
 Python and the ElementTree XML library.
 
 ### Data Sources
-Official ICD-10 XML files are downloaded from [cms.gov website](https://www.cms.gov/Medicare/Coding/ICD10).
+Official ICD-10 XML files are downloaded from [cms.gov](https://www.cms.gov/Medicare/Coding/ICD10).
