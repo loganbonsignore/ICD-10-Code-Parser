@@ -13,7 +13,7 @@ with open("Data/JSON/PCS_Definitions.json") as definitions_file:
 #########################################################################################################################
 
 class Parser:
-    def init(self):
+    def __init__(self):
         self.term_found_flag = False # Flag for ensuring mainterm found. Used for debugging
 
     def execute_tree(self, mainterm, single_level_check=False):
@@ -66,7 +66,7 @@ class Parser:
                 print(f"Automatically choosing term, '{new_level_term}', because it's the only choice available.")
                 # Re-query mainterm object to find subterm that matches our new_level_term
                 # Start another while loop with updated mainterm object
-                mainterm = [i for i in mainterm["term"] if i["title"] == new_level_term][0]
+                mainterm = self.find_matching_mainterm_to_user_input(mainterm, new_level_term)
             else:
                 # If more than one next level choice, ask user to choose
                 print(new_level_terms)
@@ -75,7 +75,7 @@ class Parser:
                 if user_input not in new_level_terms:
                     user_input = self.handle_bad_user_query
                 # Find new mainterm object based on user choice above
-                mainterm = [i for i in mainterm["term"] if i["title"] == user_input][0]
+                mainterm = self.find_matching_mainterm_to_user_input(mainterm, user_input)
                 # Check for levels on new mainterm
                 levels = self.check_for_levels_in_mainterm(mainterm)
                 if not levels:
@@ -84,6 +84,25 @@ class Parser:
                     level_flag = False
                     Mainterm_Parser().progress_through_levels_execute(mainterm)
     
+    def find_matching_mainterm_to_user_input(self, mainterm, user_input):
+        # This function is called in progress_through_levels()
+        # This function iterates through next level terms and returns the term with a 'title' or 'see' tag equal to user_input
+        # This function returns a 'mainterm' object or raises LookupError
+        # Find new mainterm object based on user choice above
+        for i in mainterm["term"]:
+            try:
+                # See if 'title' value matches user input
+                if i["title"] == user_input:
+                    return i
+            except KeyError:
+                try:
+                    # If no 'title' value, check 'see' value for match
+                    if i["see"] == user_input:
+                        return i
+                except KeyError:
+                    # If no 'title' or 'see' match, raise error
+                    raise LookupError("Could not find user's term in next_level_choices. Checked for a 'see' and 'title' tag. -> progress_through_levels()")
+
     def handle_bad_user_query(self, user_input, new_level_terms):
         # This function is called in progress_through_levels() and get_render_ask_next_level_terms()
         # If a user searches for a term that is not valid, give user three more trys
@@ -147,10 +166,23 @@ class Parser:
         """
         # This function returns the "title" value of each next level subterm in a list
         # If the "mainterm" does not have subterms, the function returns None
+        next_level_terms = []
         try:
             # Get list of "title" values on the next level of subterms
-            next_level_terms = [level["title"] for level in mainterm["term"]]
-        except KeyError as err:
+            for level_term in mainterm["term"]:
+                try:
+                    # Get 'level' tag
+                    title = level_term["title"]
+                except KeyError:
+                    try:
+                        # If no 'level' tag, try to get 'see' tag
+                        title = level_term["see"]
+                    except KeyError:
+                        # Raise error if cannot find text to use in 'title' or 'see'
+                        raise LookupError("Could not determine which text to be used when retrieveing next level values. See get_next_level_title_values()")
+                # Add term to terms list to return to user
+                next_level_terms.append(title)
+        except KeyError:
             # If no next level terms, return None
             next_level_terms = None
         return next_level_terms
@@ -617,6 +649,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                     # If there are two terms, execute function that can handle
                     self.term_found_flag = True
                     self.execute_group_2_1_1(split_term)
+                    break
                 elif len(split_term) >= 3:
                     # If there are three or more terms, raise error. Need functionality
                     pprint(f"Mainterm: {new_mainterm_1}")
