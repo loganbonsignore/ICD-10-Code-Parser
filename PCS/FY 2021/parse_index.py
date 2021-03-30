@@ -10,7 +10,7 @@ with open("Data/JSON/PCS_Definitions.json") as definitions_file:
     defs = json.load(definitions_file)
 
 ################################################# Start Class Definitions #################################################
-#########################################################################################################################
+###########################################################################################################################
 
 class Parser:
     def __init__(self):
@@ -138,7 +138,7 @@ class Parser:
                         # Check for "term" key in sub_term
                         # This indicates multiple levels
                         return True
-                except KeyError as err:
+                except KeyError:
                     pass
             try:
                 if mainterm["term"][0]["_level"] == "1":
@@ -150,10 +150,10 @@ class Parser:
                     # This indicates there is a next level
                     return True
             # If no mainterm["_level"] key, return False
-            except KeyError as err:
+            except KeyError:
                 return False
         # If no mainterm["term"] key, return False
-        except KeyError as err:
+        except KeyError:
             return False
         
     def get_next_level_title_values(self, mainterm):
@@ -240,7 +240,7 @@ class Parser:
         else:
             try:
                 text_choices = [term[key_1] for term in mainterm["term"]]
-            except KeyError as err:
+            except KeyError:
                 text_choices = [term["__text"] for term in mainterm["term"]]
         print(text_choices)
         user_input = input("Choose term that most correlates to this medical case: ")
@@ -248,6 +248,10 @@ class Parser:
             return user_input
         else:
             return self.handle_bad_user_query(user_input, text_choices)
+
+    def create_new_mainterm_generator(self, index):
+        letters_new = (letter_new for letter_new in index["ICD10PCS.index"]["letter"])
+        return (mainterms_new for letter in letters_new for mainterms_new in letter["mainTerm"])
 
 class Single_Level_Parser(Parser):
     def execute_single_level(self, mainterm):
@@ -325,8 +329,9 @@ class Single_Level_Parser(Parser):
         # Get user's selection of new mainterm of focus
         user_input = self.get_render_ask_next_level_terms(mainterm, "see")
         # Re-query the 'mainterms' generator to find the mainterm that matches user's selection
-        # Assumes 'mainterms' generator already in memory (see test block). If not already in memory will need to add here.
-        # mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
+        # Create new generator object so that new search starts at the beginning of the mainterms
+        # If use generator object already in memory you will start your iteration whereever the last iteration left off
+        mainterms = self.create_new_mainterm_generator(index)
         for new_mainterm in mainterms:
             if new_mainterm["title"] == user_input:
                 self.term_found_flag = True
@@ -631,9 +636,11 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         # This function handles mainterm objects with a "see" key
         new_term = mainterm["see"]
         print(f"--Redirected to term '{new_term}'.") # Logging
-        # Assumes 'mainterms' generator already in memory (see test block). If not already in memory will need to add here.
-        # mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
+        # Create new generator object so that new search starts at the beginning of the mainterms
+        # If use generator object already in memory you will start your iteration whereever the last iteration left off
+        mainterms = self.create_new_mainterm_generator(index)
         for new_mainterm_1 in mainterms:
+            # print(new_mainterm_1["title"], new_term)
             # Re-query mainterms to find new_mainterm object with matching "title" 
             # "title" value must match the original mainterm's "see" value
             if new_mainterm_1["title"] == new_term:
@@ -647,7 +654,6 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                 split_term = new_term.split(", ")
                 if len(split_term) == 2:
                     # If there are two terms, execute function that can handle
-                    self.term_found_flag = True
                     self.execute_group_2_1_1(split_term)
                     break
                 elif len(split_term) >= 3:
@@ -666,8 +672,9 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         parent_search_term, child_search_term = split_term
         print(f"--Looking for new parent term: {parent_search_term}") # Logging
         # Re-query the database to find first search term
-        # Assumes 'mainterms' generator already in memory (see test block). If not already in memory will need to add here.
-        # mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
+        # Create new generator object so that new search starts at the beginning of the mainterms
+        # If use generator object in memory this iteration will start where last iteration left off
+        mainterms = self.create_new_mainterm_generator(index)
         for new_mainterm_2 in mainterms:
             if new_mainterm_2["title"] == parent_search_term:
                 # If find first search term, look for second search term
@@ -713,7 +720,7 @@ The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given
             # If "mainterm" has a "title" key, display "title" in return
             print(f"""
 Use final code: {mainterm['code']} with description '{mainterm['title']}'.""")
-        except KeyError as err:
+        except KeyError:
             # If no title key, only display "code"
             print(f"""
 Use final code: {mainterm['code']}. No further information given.""")
