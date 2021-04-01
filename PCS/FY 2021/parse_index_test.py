@@ -15,7 +15,7 @@ with open("Data/JSON/PCS_Definitions.json") as definitions_file:
 class Parser:
     def __init__(self):
         self.term_found_flag = False # Flag for ensuring mainterm found. Used for debugging.
-        self.given_pcs_component = False # Flag to let output function know if need to account for PCS Table component.
+        self.pcs_component = False # Flag to let output function know if need to account for PCS Table component.
 
     def execute_tree(self, mainterm, single_level_check=False):
         """
@@ -75,7 +75,7 @@ class Parser:
                 user_input = input("Choose term : ")
                 # If user's choice does not match a choice in new_level_terms
                 if user_input not in new_level_terms:
-                    user_input = self.handle_bad_user_query
+                    user_input = self.handle_bad_user_query(user_input, new_level_terms)
                 # Find new mainterm object based on user choice above
                 mainterm = self.find_matching_mainterm_to_user_input(mainterm, user_input)
                 # Check for levels on new mainterm
@@ -109,8 +109,12 @@ class Parser:
                     if subterm["see"] == user_input:
                         return subterm
                 except KeyError:
-                    # If no 'title' or 'see' match, raise error
-                    raise LookupError("Could not find user's term in next_level_choices. Checked for a 'see' and 'title' tag. -> progress_through_levels()")
+                    try:
+                        if subterm["code"] == user_input:
+                            return subterm
+                    except KeyError:
+                        # If no 'title' or 'see' match, raise error
+                        raise LookupError("Could not find user's term in next_level_choices. Checked for a 'see', 'title', and 'code' tag. -> progress_through_levels()")
 
     def handle_bad_user_query(self, user_input, new_level_terms):
         """
@@ -192,8 +196,11 @@ class Parser:
                         if isinstance(level_term["see"], str):
                             title = level_term["see"]
                     except KeyError:
-                        # Raise error if cannot find text to use in 'title' or 'see'
-                        raise LookupError("Could not determine which text to be used when retrieveing next level values. See get_next_level_title_values()")
+                        try:
+                            title = level_term["code"]
+                        except KeyError:
+                            # Raise error if cannot find text to use in 'title' or 'see'
+                            raise LookupError("Could not determine which text to be used when retrieveing next level values. See get_next_level_title_values()")
                 # Add term to terms list to return to user
                 next_level_terms.append(title)
         except KeyError:
@@ -269,7 +276,7 @@ class Parser:
         Return
             Generator object of all 'mainterm' objects
         """
-        # This function is called in: execute_single_level_1_1(), execute_group_2_1(), custom_search_terms_with_autofill(), handle_with_pcs_column_header_mainterm(), execute_group_2_1_1()
+        # This function is called in: execute_single_level_1_1(), execute_group_2_1(), custom_search(), handle_pcs_table_component(), execute_group_2_1_1()
         # This function is used to create a new generator object of all 'mainterm' objects
         # It is needed in situations where we are re-querying the mainterms and have already iterated through a generator object
         # If we dont create a new generator object, the next iteration on that object will start where the last iteration left off
@@ -482,10 +489,10 @@ You have {len_choices} choices for final codes related to term '{mainterm['title
         print(choices)
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
         
     def execute_single_level_5(self, mainterm):
         print("--------execute_single_level_5--------")
@@ -519,10 +526,10 @@ Choices for Final codes: {final_codes}""")
             print(f"Choices for un-finished codes: {partial_codes}")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
 class Mainterm_Parser(Parser):
     def parent_execute(self, mainterm):
@@ -632,10 +639,10 @@ class Mainterm_Parser(Parser):
 Use the code associated with term '{mainterm['use']}' in the PCS Table.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
     def execute_group_1_2(self, mainterm):
         print("--------execute_group_1_2--------")
@@ -656,10 +663,10 @@ Use the code associated with term '{mainterm['use']}' in the PCS Table.""")
 Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
                 
     def execute_group_2(self, mainterm):
@@ -696,7 +703,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         # This function handles mainterm objects with a "see" key
         new_term = mainterm["see"]
         print(f"--Redirected to term '{new_term}'.") # Logging
-        # Create new generator object so that new search starts at the beginning of the mainterms
+        # Create new generator object
         mainterms = self.create_new_mainterm_generator(index)
         # Resetting term_found_flag
         self.term_found_flag = False
@@ -704,7 +711,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         # "title" value must match the original mainterm's "see" value
         for new_mainterm_1 in mainterms:
             # If mainterm object's 'title' value is equal to our new search term, execute
-            # Testing capitalized case search term as well for specific use cases (Ex: "Diagnostic Audiology","Diagnostic imaging","Diagnostic radiology","Radiology, diagnostic","Nuclear scintigraphy")
+            # Using capitalized case search term for specific use cases (Ex: "Diagnostic Audiology","Diagnostic imaging","Diagnostic radiology","Radiology, diagnostic","Nuclear scintigraphy")
             if new_mainterm_1["title"] == new_term or new_mainterm_1["title"] == new_term.capitalize():
                 print(f"--Found '{new_term}' on first attempt") # Logging
                 self.term_found_flag = True
@@ -723,34 +730,36 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             elif len(split_term) == 3:
                 # If there are three terms, execute function that can handle
                 self.term_found_flag = True
-                self.custom_search_terms_with_autofill(new_term)
-                
-        # If we have still not found a match
+                self.custom_search(new_term)
+        # If we have still not found a match 
         if not self.term_found_flag:
             # Isolate first word from new_term
             first_word = new_term.split(" ")[0]
-            # If first word is introduction...
-            if first_word == "Introduction":
+            # If first word is introduction... (Ex: 'Drotrecogin alfa, infusion', 'Eptifibatide, infusion')
+            if first_word == "Introduction": 
                 self.term_found_flag = True
-                print("NEED FUNCTION TO HANDLE")
-                
+                print("NEED FUNCTION TO HANDLE. INTEGRATE TO PCS TABLE") 
         # If we still havent found a match
         if not self.term_found_flag:
+            # Look for words signifying a certain structure (Ex: Core needle biopsy, Punch biopsy)
             if "with qualifier" in new_term or "with device" in new_term:
                 self.term_found_flag = True
-                self.handle_with_pcs_column_header_mainterm(new_term)
-        
+                self.handle_pcs_table_component(new_term)
+        # If still now match, throw LookupError
         if not self.term_found_flag:
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1()")
 
-    def custom_search_terms_with_autofill(self, new_term):
-        print("--------custom_search_terms_with_autofill--------")
+    def custom_search(self, new_term):
+        print("--------custom_search--------")
         """
         Args
             new_term -> "see" value that contains 3 separate search terms in one string.
         Returns
             None.
         """
+        # This function is called in execute_group_2_1()
+        # These are custom searches that are hard coded because of there unique "see" value structure 
+        # 'Ligation, hemorrhoid'
         if new_term == "Occlusion, Lower Veins, Hemorrhoidal Plexus":
             # Create new 'mainterms' generator object
             mainterms = self.create_new_mainterm_generator(index)
@@ -765,8 +774,9 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                                 if new_mainterm_4["title"] == "Lower":
                                     code = new_mainterm_4["codes"]
                                     # Used in execute function to notify that Index gave us a PCS Table component
-                                    self.given_pcs_component = ("qualifier", "Hemorrhoidal Plexus")
+                                    self.pcs_component = ("qualifier", "Hemorrhoidal Plexus")
                                     self.execute_group_6(new_mainterm_4)
+        # 'Myocardial Bridge Release'
         elif new_term == "Release, Artery, Coronary":
             # Create new 'mainterms' generator object
             mainterms = self.create_new_mainterm_generator(index)
@@ -780,25 +790,46 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                                 # Search for subterm object with 'title' value of "Coronary"
                                 if new_mainterm_4["title"] == "Coronary":
                                     self.execute_tree(new_mainterm_4)
+        # Psychotherapy -> Individual
+        elif new_term == "Psychotherapy, Individual, Mental Health Services":
+            # Create new 'mainterms' generator object
+            mainterms = self.create_new_mainterm_generator(index)
+            for new_mainterm_2 in mainterms:
+                # Search for 'mainterm' object with 'title' value of "Release"
+                if new_mainterm_2["title"] == "Psychotherapy":
+                    for new_mainterm_3 in new_mainterm_2["term"]:
+                        # Search for subterm object with 'title' value of "Artery"
+                        if new_mainterm_3["title"] == "Individual":
+                            for new_mainterm_4 in new_mainterm_3["term"]:
+                                # Search for subterm object with 'title' value of "Coronary"
+                                try:
+                                    if new_mainterm_4["title"] == "Mental Health Services":
+                                        self.execute_tree(new_mainterm_4, single_level_check=True)
+                                except KeyError:
+                                    if new_mainterm_4["see"] == "Mental Health Services":
+                                        self.execute_tree(new_mainterm_4, single_level_check=True)
         else:
-            raise LookupError("Do not have a function build to handle lookup term '{new_term}' -> custom_search_terms_with_autofill()")
+            raise LookupError("Do not have a function build to handle lookup term '{new_term}' -> custom_search()")
 
-    def handle_with_pcs_column_header_mainterm(self, new_term):
-        print("--------handle_with_pcs_column_header_mainterm--------")
+    def handle_pcs_table_component(self, new_term):
+        print("--------handle_pcs_table_component--------")
         """
         Args
             new_term -> "see" value that contains a string representing a new search term and PCS Table component.
         Returns
             None.
         """
-        # Example mainterm: "Core needle biopsy", "Punch biopsy"
+        # This function is called in execute_group_2_1()
+        # This function parses a string containing information returned from a "see" tag
+        # The string tells us what the new search term is, the PCS column header to be used (pos), and the PCS component to be used
+        # Ex: 'Core needle biopsy', 'Punch biopsy'
         # Spliting text returned as value of "see" tag
         split_text = new_term.split(" ")
         # Finding new search term (always first word)
         new_search_term = split_text[0]
         # Finding pcs table column header to be used
         pcs_pos = split_text[2]
-        # Finding pcs table term to be used under pcs table column header
+        # Finding pcs term to be used under table's column header
         pcs_component = " ".join(split_text[3:])
         # Create new generator object
         mainterms = self.create_new_mainterm_generator(index)
@@ -807,7 +838,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             if mainterm_1["title"] == new_search_term:
                 # Flag to let output know if they gave us a pcs component
                 # tuple will always have the 1st position be the pos word and second position be the component
-                self.given_pcs_component = (pcs_pos, pcs_component)
+                self.pcs_component = (pcs_pos, pcs_component)
                 self.execute_tree(mainterm_1, single_level_check=True)
 
     def execute_group_2_1_1(self, split_term):
@@ -859,10 +890,10 @@ Position 4 and greater code(s): '{code[3:]}'
 Each code corresponds to it's respective position number.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
         
     def execute_group_2_3(self, mainterm):
         print("--------execute_group_2_3--------")
@@ -882,10 +913,10 @@ Go to table '{table}', located at sections '{text}'.
 The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given PCS Table""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
             
     def execute_group_4(self, mainterm):
         print("--------execute_group_4--------")
@@ -911,10 +942,10 @@ Use final code: {mainterm['code']} with description '{mainterm['title']}'.""")
 Use final code: {mainterm['code']}. No further information given.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
         
     def execute_group_5(self, mainterm):
         print("--------execute_group_5--------")
@@ -934,10 +965,10 @@ Use final code: {mainterm['code']}. No further information given.""")
 Go to table: {table}. No additional guidance given.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
     def execute_group_6(self, mainterm):
         print("--------execute_group_6--------")
@@ -959,10 +990,10 @@ Position 4 and greater code(s): '{code[3:]}'
 Each code corresponds to it's respective position number.""")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
     def execute_group_7(self, mainterm):
         print("--------execute_group_7--------")
@@ -987,21 +1018,21 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
             self.execute_tree(mainterm)
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
-        if self.given_pcs_component:
-            print(f"Use {self.given_pcs_component[0]} '{self.given_pcs_component[1]}' in the PCS table.")
-            # Resetting given_pcs_component flag
-            self.given_pcs_component = False
+        if self.pcs_component:
+            print(f"Use {self.pcs_component[0]} '{self.pcs_component[1]}' in the PCS table.")
+            # Resetting pcs_component flag
+            self.pcs_component = False
 
 ################################################# End Class Definitions #################################################
 #########################################################################################################################
 single_level_parser = Single_Level_Parser()
 mainterm_parser = Mainterm_Parser()
 
-user_flag = "y" # Flag used to see if user wants to choose a different term
+user_flag = "y" # Flag used to determine if user wants to choose another term
 while user_flag == "y":
-    # Creat generator of all 'letter' objects
+    # Create generator object of all 'letter' objects
     letters = (letter for letter in index["ICD10PCS.index"]["letter"])
-    # Create generator of all 'mainterm' objects
+    # Create generator object of all 'mainterm' objects
     mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
     # Ask user for query mainterm
     user_mainterm = input("Enter the medical term you want to search for : ")
