@@ -155,15 +155,15 @@ class Parser:
             # Check for "term" key in mainterm. If no "term" key, return False (no levels)
             for subterm in mainterm["term"]:
                 try:
+                    # Check for "term" key in sub_term
                     if subterm["term"]:
-                        # Check for "term" key in sub_term
                         # This indicates multiple levels
                         return True
                 except KeyError:
                     pass
             try:
+                # Check for level term on one of subterms
                 if mainterm["term"][0]["_level"]:
-                    # Check for level term on one of subterms
                     # This indicates multiple level 1 terms
                     return "level_1"
             # If no mainterm["_level"] key, return False
@@ -524,6 +524,8 @@ You have {len_choices} choices for final codes related to term '{mainterm['title
 Choices for Final codes: {final_codes}""")
         if len(partial_codes) > 0:
             print(f"Choices for un-finished codes: {partial_codes}")
+        if len(partial_codes) == 0 and len(final_codes) == 0:
+            raise LookupError("Not prepared for mainterm structure -> execute_single_level_5()")
         # Check to see if given a 'qualifier' or 'device'
         # Always found in 'see' key
         if self.pcs_component:
@@ -790,7 +792,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                                 # Search for subterm object with 'title' value of "Coronary"
                                 if new_mainterm_4["title"] == "Coronary":
                                     self.execute_tree(new_mainterm_4)
-        # Psychotherapy -> Individual
+        # Psychotherapy -> Individual -> Mental Health Services
         elif new_term == "Psychotherapy, Individual, Mental Health Services":
             # Create new 'mainterms' generator object
             mainterms = self.create_new_mainterm_generator(index)
