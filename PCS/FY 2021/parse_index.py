@@ -215,14 +215,14 @@ class Parser:
             set_like_object -> set containing ordered dictionary keys which are being compared.
         Returns
             True
-            ValueError
+            LookupError
         """
         accounted_for_structures = [
             {'title', 'codes', '_level'}, # Accounted for in execute_single_level_5
             {'title', 'code', '_level'}, # Accounted for in execute_single_level_5
         ]
         # This function interates through each subterm to see if subterm structures vary from one another
-        # It will raise ValueError if a mainterm structure is found that our code isn't prepared to handle
+        # It will raise LookupError if a mainterm structure is found that our code isn't prepared to handle
         # set_like_object is passed to the function and is a set of the first subterm's keys
         for term in mainterm["term"]:
             # Extracting keys of subterm
@@ -234,12 +234,12 @@ class Parser:
                 if key not in set_like_object:
                     # Iterate through subterms and check that keys are not in accounted_for_structures
                     for subterm in mainterm["term"]:
-                        # If not in accounted_for_structures, raise ValueError
+                        # If not in accounted_for_structures, raise LookupError
                         if subterm.keys() in accounted_for_structures:
                             # This True value is used in execute_single_level()
                             return True
                         else:
-                            raise ValueError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
+                            raise LookupError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
         # NOTE: Add functionality here to handle mainterm's with different structures
         # Could call an execute function here depending on structure found
     
@@ -312,7 +312,7 @@ class Single_Level_Parser(Parser):
             None.
         """
         # This function points to a sub-function built to handle incoming mainterm structures
-        # It returns ValueError if presented a mainterm structure it cannot handle
+        # It returns LookupError if presented a mainterm structure it cannot handle
         # The first subterm is used to understand mainterm's structure
         # It is assumed that all subterms have the same key structure (which may not be true, Logan in progress of adding functionality)
         # Based on structure of subterms found, execute function that can handle structure
@@ -337,9 +337,9 @@ class Single_Level_Parser(Parser):
             if varying_structures:
                 self.execute_single_level_5(mainterm)
             else:
-                raise ValueError("Code not prepared for mainterm's keys -> execute_single_level()")
+                raise LookupError("Code not prepared for mainterm's keys -> execute_single_level()")
         else:
-            raise ValueError("Code not prepared mainterm's keys -> execute_single_level()") 
+            raise LookupError("Code not prepared mainterm's keys -> execute_single_level()") 
 
             
     def execute_single_level_1(self, mainterm):
@@ -364,7 +364,7 @@ class Single_Level_Parser(Parser):
         elif {"codes", "__text"} == first_subterm["see"].keys():
             self.execute_single_level_1_2(mainterm)
         else: 
-            raise ValueError("Code not prepared for mainterm key structure -> execute_single_level_1")
+            raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1")
 
     def execute_single_level_1_1(self, mainterm):
         print("--------execute_single_level_1_1--------")
@@ -423,7 +423,7 @@ class Single_Level_Parser(Parser):
                 self.term_found_flag = True
                 self.execute_tree(new_mainterm)
                 break
-        # If we didnt find a valid response, raise ValueError
+        # If we didnt find a valid response, raise LookupError
         if not self.term_found_flag:
             raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_2")
              
@@ -448,7 +448,7 @@ class Single_Level_Parser(Parser):
                 self.term_found_flag = True
                 self.execute_tree(new_mainterm)
                 break
-        # If we didnt find a valid response, raise ValueError
+        # If we didnt find a valid response, raise LookupError
         if not self.term_found_flag:
             raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_2")
                 
@@ -477,7 +477,7 @@ class Single_Level_Parser(Parser):
                     self.term_found_flag = True
                     self.execute_tree(new_mainterm)
                     break
-            # If we didnt find a valid response, raise ValueError
+            # If we didnt find a valid response, raise LookupError
             if not self.term_found_flag:
                 raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
         else:
@@ -490,11 +490,11 @@ class Single_Level_Parser(Parser):
                         self.term_found_flag = True
                         self.execute_tree(new_mainterm)
                         break 
-                # If we didnt find a valid response, raise ValueError
+                # If we didnt find a valid response, raise LookupError
                 if not self.term_found_flag:
                     raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
             else:
-                raise ValueError("Code not prepared for mainterm key structure -> execute_single_level_3")
+                raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
         
     def execute_single_level_4(self, mainterm):
         print("--------execute_single_level_4--------")
@@ -528,16 +528,15 @@ You have {len_choices} choices for final codes related to term '{mainterm['title
         Args
             mainterm -> Mainterm object in focus.
         Returns
-            Information to user in form of print(). Will integrate with PCS Table.
+            None.
         """
         # Execute function
         # This function is called in execute_single_level()
         # This function is used to handle multiple subterm structures in the same mainterm
-        # This function only works when 'code' and 'codes' are available as subterms in a mainterm's 'term' list
+        # This function is built for subterms with 'code', 'codes', and "see" keys in a mainterm's 'term' list
         # Add functionality here to handle other varying structures as need
 
-        # Check if only 'code' and 'codes' are available in subterms
-        # We are also checking for if 'see' is available
+        # Check if 'code', 'codes' or 'see' are available in subterms's keys
         # Depending on outcome, execute function built to handle
         # Used as flag for code to determine structure
         see_structure_flag = False
@@ -563,14 +562,18 @@ You have {len_choices} choices for final codes related to term '{mainterm['title
                         pprint(mainterm)
                         raise LookupError("Unknown subterm structure found. Need function to handle -> execute_single_level_5()")
         # Ex: 'Abortion'
+        # If only need functionality for "codes", "code", execute function built to handle
         if not see_structure_flag:
             self.execute_single_level_5_1(mainterm)
         # Ex: 'Phototherapy'
         else:
             # Execute function that can handle 'see' and 'codes' structures on the same level
+            # Get users choice of next level term
             user_input = self.get_render_ask_next_level_terms(mainterm, "title")
+            # Find user's term in subterm objects
             for mainterm_1 in mainterm["term"]:
                 if mainterm_1["title"] == user_input:
+                    # Execute with new mainterm object
                     self.execute_tree(mainterm_1, single_level_check=True)
                     break
 
