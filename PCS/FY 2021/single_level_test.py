@@ -124,8 +124,14 @@ class Parser:
                         if subterm["code"] == user_input:
                             return subterm
                     except KeyError:
+
+                        ### ADDED ###
+                        global test_flag
+                        #Indicate failed test
+                        test_flag = False
+
                         # If no 'title' or 'see' match, raise error
-                        raise LookupError("Could not find user's term in next_level_choices. Checked for a 'see', 'title', and 'code' tag. -> progress_through_levels()")
+                        # raise LookupError("Could not find user's term in next_level_choices. Checked for a 'see', 'title', and 'code' tag. -> progress_through_levels()")
 
     
     def handle_bad_user_query(self, user_input, new_level_terms):
@@ -212,7 +218,13 @@ class Parser:
                         except KeyError:
                             # Raise error if cannot find text to use in 'title' or 'see'
                             pprint(mainterm)
-                            raise LookupError("Could not determine which text to be used when retrieveing next level values. See get_next_level_title_values()")
+
+                            ### ADDED ###
+                            global test_flag
+                            #Indicate failed test
+                            test_flag = False
+        
+                            # raise LookupError("Could not determine which text to be used when retrieveing next level values. See get_next_level_title_values()")
                 # Add term to terms list to return to user
                 next_level_terms.append(title)
         except KeyError:
@@ -252,7 +264,13 @@ class Parser:
                             return True
                         else:
                             pprint(mainterm)
-                            raise LookupError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
+
+                            ### ADDED ###
+                            global test_flag
+                            #Indicate failed test
+                            test_flag = False
+
+                            # raise LookupError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
         # NOTE: Add functionality here to handle mainterm's with different structures
         # Could call an execute function here depending on structure found
     
@@ -295,7 +313,13 @@ class Parser:
                                     pass
                         else:
                             pprint(mainterm)
-                            raise LookupError("Could not find term to use as 'title' of subterm. -> get_render_ask_next_level_terms()")
+
+                            ### ADDED ###
+                            global test_flag
+                            #Indicate failed test
+                            test_flag = False
+
+                            # raise LookupError("Could not find term to use as 'title' of subterm. -> get_render_ask_next_level_terms()")
         print(text_choices)
         user_input = input("Choose term that most correlates to this medical case: ")
         if user_input in text_choices:
@@ -330,6 +354,10 @@ class Single_Level_Parser(Parser):
         # The first subterm is used to understand mainterm's structure
         # It is assumed that all subterms have the same key structure (which may not be true, Logan in progress of adding functionality)
         # Based on structure of subterms found, execute function that can handle structure
+        
+        ### ADDED ###
+        global test_flag
+
         first_subterm = mainterm["term"][0]
         if {"see", "_level"} == first_subterm.keys():
             self.check_for_varying_subterm_structures(mainterm, {"see", "_level"})
@@ -352,10 +380,20 @@ class Single_Level_Parser(Parser):
                 self.execute_single_level_5(mainterm)
             else:
                 pprint(mainterm)
-                raise LookupError("Code not prepared for mainterm's keys -> execute_single_level()")
+
+                ### ADDED ###
+                #Indicate failed test
+                test_flag = False
+
+                # raise LookupError("Code not prepared for mainterm's keys -> execute_single_level()")
         else:
             pprint(mainterm)
-            raise LookupError("Code not prepared mainterm's keys -> execute_single_level()") 
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared mainterm's keys -> execute_single_level()") 
 
             
     def execute_single_level_1(self, mainterm):
@@ -381,7 +419,13 @@ class Single_Level_Parser(Parser):
             self.execute_single_level_1_2(mainterm)
         else: 
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1")
 
     def execute_single_level_1_1(self, mainterm):
         print("--------execute_single_level_1_1--------")
@@ -391,6 +435,10 @@ class Single_Level_Parser(Parser):
         Returns
             None.
         """
+        
+        ### ADDED ###
+        global test_flag
+
         # This function is called in execute_single_level_1()
         # This function handles mainterm objects containing a "see" key that does not have children
         # Ensure term_found_flag is False
@@ -413,10 +461,20 @@ class Single_Level_Parser(Parser):
                         self.term_found_flag = True
                         mainterm_parser.execute_group_2_1(new_mainterm_1)
             except KeyError:
-                raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_1()")
+
+                ### ADDED ###
+                #Indicate failed test
+                test_flag = False
+
+                # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_1()")
         # If we didnt find a valid response, raise LookupError
         if not self.term_found_flag:
-            raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_1")
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_1")
     
     def execute_single_level_1_2(self, mainterm):
         print("--------execute_single_level_1_2--------")
@@ -442,7 +500,13 @@ class Single_Level_Parser(Parser):
                 break
         # If we didnt find a valid response, raise LookupError
         if not self.term_found_flag:
-            raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_2")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_1_2")
              
     def execute_single_level_2(self, mainterm):
         print("--------execute_single_level_2--------")
@@ -467,7 +531,13 @@ class Single_Level_Parser(Parser):
                 break
         # If we didnt find a valid response, raise LookupError
         if not self.term_found_flag:
-            raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_2")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_2")
                 
     def execute_single_level_3(self, mainterm):
         print("--------execute_single_level_3--------")
@@ -477,6 +547,10 @@ class Single_Level_Parser(Parser):
         Returns
             None
         """
+
+        ### ADDED ###
+        global test_flag
+
         # This function is called in execute_single_level()
         # This function handles a "use" tag with or without children
         # Ensure term_found_flag is False
@@ -496,7 +570,12 @@ class Single_Level_Parser(Parser):
                     break
             # If we didnt find a valid response, raise LookupError
             if not self.term_found_flag:
-                raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
+
+                ### ADDED ###
+                #Indicate failed test
+                test_flag = False
+
+                # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
         else:
             # If "use" key has children, execute based on structure returned
             if {"tab", "__text"} == first_subterm["use"].keys():
@@ -509,9 +588,19 @@ class Single_Level_Parser(Parser):
                         break 
                 # If we didnt find a valid response, raise LookupError
                 if not self.term_found_flag:
-                    raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
+
+                    ### ADDED ###
+                    #Indicate failed test
+                    test_flag = False
+
+                    # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
             else:
-                raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
+
+                ### ADDED ###
+                #Indicate failed test
+                test_flag = False
+
+                # raise LookupError("Code not prepared for mainterm key structure -> execute_single_level_3")
         
     def execute_single_level_4(self, mainterm):
         print("--------execute_single_level_4--------")
@@ -593,7 +682,13 @@ class Single_Level_Parser(Parser):
                             see_structure_flag = True
                     except:
                         pprint(mainterm)
-                        raise LookupError("Unknown subterm structure found. Need function to handle -> execute_single_level_5()")
+
+                        ### ADDED ###
+                        global test_flag
+                        #Indicate failed test
+                        test_flag = False
+
+                        # raise LookupError("Unknown subterm structure found. Need function to handle -> execute_single_level_5()")
         # Ex: 'Abortion'
         # If only need functionality for "codes", "code", execute function built to handle
         if not see_structure_flag:
@@ -690,6 +785,8 @@ class Mainterm_Parser(Parser):
             self.execute_tree(mainterm)
         elif {"title", "tab"} == mainterm.keys():
             self.execute_group_5(mainterm)
+        elif {"title", "tab", "_level"} == mainterm.keys():
+            self.execute_group_5(mainterm)
         elif {"title", "codes"} == mainterm.keys():
             self.execute_group_6(mainterm)
         elif {"title", "code"} == mainterm.keys():
@@ -708,10 +805,20 @@ class Mainterm_Parser(Parser):
             self.execute_group_6(mainterm)
         else:
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
             
     def progress_through_levels_execute(self, mainterm):
         print("--------progress_through_levels_execute--------")
+
+        ### ADDED ###
+        global test_flag
+
         # This function is called in Parser().progress_through_levels()
         # It uses sub-functions defined in the Mainterm_Parser() class to complete queries
         # Depending on the key structure of the passed 'mainterm', this function will call sub-function built to handle
@@ -731,10 +838,20 @@ class Mainterm_Parser(Parser):
             self.execute_group_5(mainterm)
         elif {"_level"} == mainterm.keys():
             print(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
         else:    
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
     
     def execute_group_1(self, mainterm):
         print("--------execute_group_1--------")
@@ -754,7 +871,13 @@ class Mainterm_Parser(Parser):
             self.execute_group_1_2(mainterm)
         else:
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> execute_group_1()")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_group_1()")
 
     
     def execute_group_1_1(self, mainterm):
@@ -863,6 +986,10 @@ class Mainterm_Parser(Parser):
 
     def execute_group_2_1(self, mainterm):
         print("--------execute_group_2_1--------")
+
+        ### ADDED ###
+        global test_flag
+
         """
         Args
             mainterm -> Mainterm object in focus.
@@ -914,7 +1041,6 @@ class Mainterm_Parser(Parser):
                 # Used to avoid raising error later
                 self.term_found_flag = True
                 # Indicate failed test
-                global test_flag
                 test_flag = False
 
         # If we still havent found a match
@@ -926,7 +1052,12 @@ class Mainterm_Parser(Parser):
         # If still now match, throw LookupError
         if not self.term_found_flag:
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1()")
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1()")
 
     def custom_search(self, new_term):
         print("--------custom_search--------")
@@ -995,7 +1126,12 @@ class Mainterm_Parser(Parser):
             #                             self.execute_tree(new_mainterm_4, single_level_check=True)
             test_flag = True
         else:
-            raise LookupError(f"Do not have a function build to handle lookup term '{new_term}' -> custom_search()")
+
+            ### ADDED ###
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError(f"Do not have a function build to handle lookup term '{new_term}' -> custom_search()")
 
     def handle_pcs_table_component(self, new_term):
         print("--------handle_pcs_table_component--------")
@@ -1057,7 +1193,13 @@ class Mainterm_Parser(Parser):
                         self.execute_tree(subterm)
                         break
         if not self.term_found_flag:
-            raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1_1()")
+
+            ### ADDED ###
+            global test_flag
+            #Indicate failed test
+            test_flag = False
+
+            # raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1_1()")
     
     def execute_group_2_2(self, mainterm):
         print("--------execute_group_2_2--------")
@@ -1133,7 +1275,13 @@ class Mainterm_Parser(Parser):
             test_flag = True
         except:
             test_flag = False
-            
+
+        
+
+
+
+
+
     def execute_group_4(self, mainterm):
         print("--------execute_group_4--------")
         """
@@ -1312,6 +1460,7 @@ mainterm_parser = Mainterm_Parser()
 #             break
 #     user_flag = input("\nDo you want to search another term? (y/n) : ").lower()
 
+# List of terms not tested in first round of testing
 terms_not_tested = ['Abdominoplasty',
  'Abductor hallucis muscle',
  'Ablation',
@@ -2644,8 +2793,11 @@ def run_test(mainterm):
     if success:
         successful_tests.append(mainterm)
 
+count = 0
 for term in untested_terms:
     run_test(term)
+    count += 1
+    print(count)
 
 print(f"Number of terms NOT tested: {len(terms_not_tested)}")
 print(f"Number of terms tested successfully: {len(successful_tests)}")
