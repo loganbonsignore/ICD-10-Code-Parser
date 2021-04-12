@@ -508,7 +508,6 @@ class Single_Level_Parser(Parser):
         Returns
             None.
         """
-
         # This function points to a sub-function built to handle incoming mainterm structures
         # It returns LookupError if presented a mainterm structure it cannot handle
         # The first subterm is used to understand mainterm's structure
@@ -3095,10 +3094,10 @@ print(f"Number of terms not tested: {len(master_test.terms_not_tested)}")
 total_tests_completed = len(master_test.successful_tests) + len(master_test.unsuccessful_tests) + len(master_test.terms_not_tested)
 print(f"Total Tests Completed: {total_tests_completed}")
 print("---------Unsuccessful Tests---------")
-for term in master_test.unsuccessful_tests: pprint(term["title"])
+# for term in master_test.unsuccessful_tests: pprint(term["title"])
 
 #####################################################################################
-# test_mainterm_title = "Angioscopy"
+# test_mainterm_title = "New Technology"
 
 # # Test singular mainterm
 # master_test = Master_Test()
@@ -3142,107 +3141,92 @@ for term in master_test.unsuccessful_tests: pprint(term["title"])
 
 
 
-# If term is commented out it means the term has been manually tested successfully
+# If mainterm is commented out it means the term has been manually tested successfully
+# The test structure does not account of single level structures that are handled differently
+# Test returns multiple errors for a single mainterm because the index calls that mainterm more than once
+# When manually testing a term, always search PCS_INDEX.JSON for the term and test all possible combinations
 terms_to_debug = [
     # 'Angioscopy'
     # 'Antimicrobial envelope'
     # 'Cerebral Embolic Filtration'
     # 'Antimicrobial envelope'
-    'Clipping, aneurysm' # failed subterms: 'Occlusion using Extraluminal Device', 'Restriction using Extraluminal Device'
+    'Clipping, aneurysm', # Failed "see" lookup: 'Occlusion using Extraluminal Device', 'Restriction using Extraluminal Device'
     # 'Bowel, Small'
     # 'Gastrointestinal, Upper'
     # 'DownStream(R) System'
-    'Drotrecogin alfa, infusion' # Introduction...
+    'Drotrecogin alfa, infusion', # Introduction...
     # 'Orbital Atherectomy Technology'
-    'Eptifibatide, infusion' # Introduction...
-    'Antimicrobial envelope'
-    'Antimicrobial envelope'
-    'Immunization'
-    'Immunotherapy'
-    'Immunotherapy, antineoplastic'
-    'Immunotherapy, antineoplastic'
-    'Immunotherapy, antineoplastic'
-    'Immunotherapy, antineoplastic'
-    'Immunotherapy, antineoplastic'
-    'Immunotherapy, antineoplastic'
-    'Antimicrobial envelope'
-    'Induction of labor'
-    'Antimicrobial envelope'
-    'Lengthening'
-    'Orbital Atherectomy Technology'
-    'Localization'
-    'Intraoperative Knee Replacement Sensor'
-    'Atezolizumab Antineoplastic'
-    'Bamlanivimab Monoclonal Antibody'
-    'Baricitinib'
-    'Bezlotoxumab Monoclonal Antibody'
-    'Blinatumomab Antineoplastic Immunotherapy'
-    'Brexanolone'
-    'Brexucabtagene Autoleucel Immunotherapy'
-    'Caplacizumab'
-    'CD24Fc Immunomodulator'
-    'Cefiderocol Anti-infective'
-    'Ceftazidime-Avibactam Anti-infective'
-    'Ceftolozane/Tazobactam Anti-infective'
-    'Cerebral Embolic Filtration'
-    'Coagulation Factor Xa, Inactivated'
-    'COVID-19 Vaccine'
-    'COVID-19 Vaccine Dose 1'
-    'COVID-19 Vaccine Dose 2'
-    'Cytarabine and Daunorubicin Liposome Antineoplastic'
-    'Defibrotide Sodium Anticoagulant'
-    'Durvalumab Antineoplastic'
-    'Eculizumab'
-    'Engineered Autologous Chimeric Antigen Receptor T-cell Immunotherapy'
-    'Etesevimab Monoclonal Antibody'
-    'Fosfomycin Anti-infective'
-    'Idarucizumab, Dabigatran Reversal Agent'
-    'Imipenem-cilastatin-relebactam Anti-infective'
-    'Intraoperative Knee Replacement Sensor'
-    'Iobenguane I-131 Antineoplastic'
-    'Isavuconazole Anti-infective'
-    'Lefamulin Anti-infective'
-    'Lisocabtagene Maraleucel Immunotherapy'
-    'Meropenem-vaborbactam Anti-infective'
-    'Mineral-based Topical Hemostatic Agent'
-    'Nerinitide'
-    'Omadacycline Anti-infective'
-    'Orbital Atherectomy Technology'
-    'Other New Technology Monoclonal Antibody'
-    'Other New Technology Therapeutic Substance'
-    'Plasma, Convalescent (Nonautologous)'
-    'Plazomicin Anti-infective'
-    'REGN-COV2 Monoclonal Antibody'
-    'Remdesivir Anti-infective'
-    'Sarilumab'
-    'Synthetic Human Angiotensin II'
-    'Tagraxofusp-erzs Antineoplastic'
-    'Tocilizumab'
-    'Nutrition, concentrated substances'
-    'Occlusion, REBOA (resuscitative endovascular balloon occlusion of the aorta)'
-    'Occlusion, REBOA (resuscitative endovascular balloon occlusion of the aorta)'
-    'Parenteral nutrition, total'
-    'Peripheral parenteral nutrition'
-    'PPN (peripheral parenteral nutrition)'
-    'Group'
-    'Radiation Therapy'
-    'Radiation Therapy'
-    'Radiation treatment'
-    'Bowel, Small'
-    'Gastrointestinal, Upper'
-    'REBOA (resuscitative endovascular balloon occlusion of the aorta)'
-    'REBOA (resuscitative endovascular balloon occlusion of the aorta)'
-    'Resuscitative endovascular balloon occlusion of the aorta (REBOA)'
-    'Resuscitative endovascular balloon occlusion of the aorta (REBOA)'
-    'Replacement of existing device'
-    'Sclerotherapy, via injection of sclerosing agent'
-    'Orbital Atherectomy Technology'
-    'Stress test'
-    'Stress test'
-    'Supersaturated Oxygen therapy'
-    'Supersaturated Oxygen therapy'
-    'Telemetry'
-    'Orbital Atherectomy Technology'
-    'Total parenteral nutrition (TPN)'
-    'Vaccination'
+    'Eptifibatide, infusion', # Introduction...
+    ["Insertion", "Antimicrobial envelope"], # Introduction...
+    'Immunization', # Introduction...
+    'Immunotherapy', # Introduction...
+    'Immunotherapy, antineoplastic', # Introduction... w/ subterms
+    ['Induction of labor', 'Oxytocin'], # Introduction...
+    ['Lengthening', "Bone, with device"], # Failed "see" lookup: 'Insertion of Limb Lengthening Device'
+    ['Localization', "Imaging"], # Failed "see" lookup: 'Imaging'
+    # 'Intraoperative Knee Replacement Sensor'         
+    # 'Atezolizumab Antineoplastic'                       # Start 'New Technology' subterms
+    # 'Bamlanivimab Monoclonal Antibody'
+    # 'Baricitinib'
+    # 'Bezlotoxumab Monoclonal Antibody'
+    # 'Blinatumomab Antineoplastic Immunotherapy'
+    # 'Brexanolone'
+    # 'Brexucabtagene Autoleucel Immunotherapy'
+    # 'Caplacizumab'
+    # 'CD24Fc Immunomodulator'
+    # 'Cefiderocol Anti-infective'
+    # 'Ceftazidime-Avibactam Anti-infective'
+    # 'Ceftolozane/Tazobactam Anti-infective'
+    # 'Cerebral Embolic Filtration',
+    # 'Coagulation Factor Xa, Inactivated',
+    # 'COVID-19 Vaccine',
+    # 'COVID-19 Vaccine Dose 1',
+    # 'COVID-19 Vaccine Dose 2',
+    # 'Cytarabine and Daunorubicin Liposome Antineoplastic',
+    # 'Defibrotide Sodium Anticoagulant',
+    # 'Durvalumab Antineoplastic',
+    # 'Eculizumab',
+    # 'Engineered Autologous Chimeric Antigen Receptor T-cell Immunotherapy',
+    # 'Etesevimab Monoclonal Antibody',
+    # 'Fosfomycin Anti-infective',
+    # 'Idarucizumab, Dabigatran Reversal Agent',
+    # 'Imipenem-cilastatin-relebactam Anti-infective',
+    # 'Intraoperative Knee Replacement Sensor',
+    # 'Iobenguane I-131 Antineoplastic',
+    # 'Isavuconazole Anti-infective',
+    # 'Lefamulin Anti-infective',
+    # 'Lisocabtagene Maraleucel Immunotherapy',
+    # 'Meropenem-vaborbactam Anti-infective',
+    # 'Mineral-based Topical Hemostatic Agent',
+    # 'Nerinitide',
+    # 'Omadacycline Anti-infective',
+    # 'Other New Technology Monoclonal Antibody',
+    # 'Other New Technology Therapeutic Substance',
+    # 'Plasma, Convalescent (Nonautologous)',
+    # 'Plazomicin Anti-infective',
+    # 'REGN-COV2 Monoclonal Antibody',
+    # 'Remdesivir Anti-infective',
+    # 'Sarilumab',
+    # 'Synthetic Human Angiotensin II',
+    # 'Tagraxofusp-erzs Antineoplastic',
+    # 'Tocilizumab',                                   # End 'New Technology' subterms
+    ['Nutrition, concentrated substances', 'Parenteral (peripheral) infusion'], # Introduction...
+    # 'Occlusion, REBOA (resuscitative endovascular balloon occlusion of the aorta)',
+    'Parenteral nutrition, total', # Introduction...
+    'Peripheral parenteral nutrition', # Introduction...
+    'PPN (peripheral parenteral nutrition)', # Introduction... 
+    # 'Group',
+    # 'Radiation Therapy',
+    # 'Radiation treatment',
+    # 'REBOA (resuscitative endovascular balloon occlusion of the aorta)',
+    # 'Resuscitative endovascular balloon occlusion of the aorta (REBOA)',
+    ['Replacement of existing device', 'Root operation to place new device, e.g., Insertion, Replacement, Supplement'], # Failed "see" lookup: 'Root operation to place new device, e.g., Insertion, Replacement, Supplement'
+    'Sclerotherapy, via injection of sclerosing agent', # Introduction...
+    # 'Stress test',
+    # 'Supersaturated Oxygen therapy',
+    'Telemetry', # Varying subterm structure needs to be accounted for
+    'Total parenteral nutrition (TPN)', # Introduction...
+    'Vaccination', # Introduction...
 ]
+pprint(terms_to_debug)
+print(f"\nNumber of term combinations to debug: {(len(terms_to_debug))}")
