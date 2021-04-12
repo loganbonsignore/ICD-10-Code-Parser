@@ -1,3 +1,11 @@
+# master_test.py
+# Logan Bonsignore - 4/12/2021
+
+# Description:
+    # This script tests that all possible combinations of index terms are accounted for in production code.
+    # Edit prodution code here
+    # Comment/uncomment testing & production code blocks to switch between test and production capability
+
 import json
 from pprint import pprint # Used for debugging
 
