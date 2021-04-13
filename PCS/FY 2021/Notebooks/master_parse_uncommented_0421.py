@@ -235,14 +235,14 @@ class Parser:
         """
         # This function handles "mainterm" objects that contain more than 1 level
         # It iterates through levels until a final code or term is found
-        # This function executes queries using sub-function Mainterm_Parser().progress_through_levels_execute()
+        # This function executes queries using sub-function Mainterm_Parser().parent_execute()
         level_flag = True
         while level_flag:
             # Returns all "title" values from the next level of subterms
             new_level_terms = self.get_next_level_title_values(mainterm)
             if new_level_terms == None:
                 # If no next level choices, execute with final subterm
-                mainterm_parser.progress_through_levels_execute(mainterm)
+                mainterm_parser.parent_execute(mainterm)
                 level_flag = False
             elif len(new_level_terms) == 1:
                 # Find new_level_term. Auto select the first term from the new_level_terms list because only one term available
@@ -266,7 +266,7 @@ class Parser:
                     # If no more levels, execute with final mainterm
                     # If more levels, start another while loop iteration
                     level_flag = False
-                    mainterm_parser.progress_through_levels_execute(mainterm)
+                    mainterm_parser.parent_execute(mainterm)
     
     def find_matching_mainterm_to_user_input(self, mainterm, user_input):
         """
@@ -413,6 +413,8 @@ class Parser:
         accounted_for_structures = [
             {'title', 'codes', '_level'}, # Accounted for in execute_single_level_5
             {'title', 'code', '_level'}, # Accounted for in execute_single_level_5
+            {"code", "_level"}, # Accounted for in execute_single_level_4()
+            {"title", "code", "_level"}, # Accounted for in execute_single_level_4()
         ]
         # This function interates through each subterm to see if subterm structures vary from one another
         # It will raise LookupError if a mainterm structure is found that our code isn't prepared to handle
@@ -928,11 +930,21 @@ class Mainterm_Parser(Parser):
         Returns
             None
         """
+
+        ### TESTING ###
+        global test_flag
+
         # This function is called when there are no levels in the Mainterm object in focus
         # Depending on the mainterm's key structure, an execute function built to handle given structure is called
         if {"title", "use"} == mainterm.keys():
             self.execute_group_1(mainterm)
+        elif {'code', '_level'} == mainterm.keys():
+            self.execute_group_4(mainterm)
+        elif {"use", "_level"} == mainterm.keys():
+            self.execute_group_1(mainterm)
         elif {"title", "see"} == mainterm.keys():
+            self.execute_group_2(mainterm)
+        elif {"see", "_level"} == mainterm.keys():
             self.execute_group_2(mainterm)
         elif {"title", "term"} == mainterm.keys():
             self.execute_tree(mainterm)
@@ -946,61 +958,27 @@ class Mainterm_Parser(Parser):
             self.execute_group_7(mainterm)
         elif {"title", "code", "_level"} == mainterm.keys():
             self.execute_group_4(mainterm)
-        elif {"see", "_level"} == mainterm.keys():
-            self.execute_group_2(mainterm)
-        elif {"use", "_level"} == mainterm.keys():
-            self.execute_group_1(mainterm)
         elif {"title", "see", "_level"} == mainterm.keys():
             self.execute_group_2(mainterm)
         elif {"title", "codes", "_level"} == mainterm.keys():
             self.execute_group_6(mainterm)
-        else:
-            pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
-
-            # ### TESTING ###
-            # global test_flag
-            # #Indicate failed test
-            # test_flag = False
-            
-    def progress_through_levels_execute(self, mainterm):
-        print("--------progress_through_levels_execute--------")
-        
-        ### TESTING ###
-        global test_flag
-
-        # This function is called in Parser().progress_through_levels()
-        # It uses sub-functions defined in the Mainterm_Parser() class to complete queries
-        # Depending on the key structure of the passed 'mainterm', this function will call sub-function built to handle
-        if {'title', 'codes', '_level'} == mainterm.keys():
-            self.execute_group_6(mainterm)  
-        elif {'title', 'code', '_level'} == mainterm.keys():
-            self.execute_group_4(mainterm)
-        elif {'see', '_level'} == mainterm.keys():
-            self.execute_group_2(mainterm)
-        elif {'use', '_level'} == mainterm.keys():
-            self.execute_group_1(mainterm)
-        elif {'title', 'see', '_level'} == mainterm.keys():
-            self.execute_group_2(mainterm)
-        elif {'code', '_level'} == mainterm.keys():
-            self.execute_group_4(mainterm)
         elif {'title', 'tab', '_level'} == mainterm.keys():
             self.execute_group_5(mainterm)
         elif {"_level"} == mainterm.keys():
             print(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+            # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 
-            # ### TESTING ###
-            # #Indicate failed test
-            # test_flag = False
+            ### TESTING ###
+            #Indicate failed test
+            test_flag = False
 
-        else:    
+        else:
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+            # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 
-            # ### TESTING ###
-            # #Indicate failed test
-            # test_flag = False
+            ### TESTING ###
+            #Indicate failed test
+            test_flag = False
     
     def execute_group_1(self, mainterm):
         print("--------execute_group_1--------")
@@ -1010,7 +988,7 @@ class Mainterm_Parser(Parser):
         Returns
             None.
         """
-        # This function is called in parent_execute() and progress_through_levels_execute()
+        # This function is called in parent_execute() and parent_execute()
         # This function points to sub-functions that handle mainterm objects containing a "use" key
         # If "use" key returns a string then it has no children, execute function built to handle.
         if isinstance(mainterm["use"], str):
@@ -1119,7 +1097,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         Returns
             None.
         """
-        # This function is called in parent_execute() and progress_through_levels_execute()
+        # This function is called in parent_execute() and parent_execute()
         # This function points to sub-functions that handle mainterm objects containing a "see" key
         # If mainterm's "see" key returns a string then it has no children, execute function built to handle.
         if isinstance(mainterm["see"], str):
@@ -1131,7 +1109,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             self.execute_group_2_3(mainterm)
         else:
             pprint(mainterm)
-            raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+            raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 
             # ### TESTING ###
             # global test_flag
@@ -1437,7 +1415,7 @@ The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given
             Information to user in form of print(). Will integrate with PCS Table.
         """
         # Execute Function
-        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
         # This function handles a mainterm object with keys:
             # {"title", "code"}
             # {'code', '_level'}
@@ -1483,7 +1461,7 @@ Use final code: {mainterm['code']}. No further information given.""")
             Information to user in form of print(). Will integrate with PCS Table.
         """
         # Execute Function
-        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
         # This function handles a mainterm object with keys:
             # {"title", "tab"}
             # {'title', 'tab', '_level'}
@@ -1519,7 +1497,7 @@ Go to table: {table}. No additional guidance given.""")
             Information to user in form of print(). Will integrate with PCS Table.
         """
         # Execute Function
-        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+        # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
         # This function handles a mainterm object with keys:
             # "title", "codes"}
             # {'title', 'codes', '_level'}
@@ -1669,14 +1647,14 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #         """
 #         # This function handles "mainterm" objects that contain more than 1 level
 #         # It iterates through levels until a final code or term is found
-#         # This function executes queries using sub-function Mainterm_Parser().progress_through_levels_execute()
+#         # This function executes queries using sub-function Mainterm_Parser().parent_execute()
 #         level_flag = True
 #         while level_flag:
 #             # Returns all "title" values from the next level of subterms
 #             new_level_terms = self.get_next_level_title_values(mainterm)
 #             if new_level_terms == None:
 #                 # If no next level choices, execute with final subterm
-#                 mainterm_parser.progress_through_levels_execute(mainterm)
+#                 mainterm_parser.parent_execute(mainterm)
 #                 level_flag = False
 #             elif len(new_level_terms) == 1:
 #                 # Find new_level_term. Auto select the first term from the new_level_terms list because only one term available
@@ -1700,7 +1678,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #                     # If no more levels, execute with final mainterm
 #                     # If more levels, start another while loop iteration
 #                     level_flag = False
-#                     mainterm_parser.progress_through_levels_execute(mainterm)
+#                     mainterm_parser.parent_execute(mainterm)
                 
                 
     
@@ -2423,8 +2401,8 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 
 #             # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
             
-#     def progress_through_levels_execute(self, mainterm):
-#         print("--------progress_through_levels_execute--------")
+#     def parent_execute(self, mainterm):
+#         print("--------parent_execute--------")
 
 #         ### ADDED ###
 #         global test_flag
@@ -2453,7 +2431,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             #Indicate failed test
 #             test_flag = False
 
-#             # raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+#             # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 #         else:    
 #             pprint(mainterm)
 
@@ -2461,7 +2439,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             #Indicate failed test
 #             test_flag = False
 
-#             # raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+#             # raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
     
 #     def execute_group_1(self, mainterm):
 #         print("--------execute_group_1--------")
@@ -2471,7 +2449,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #         Returns
 #             None.
 #         """
-#         # This function is called in parent_execute() and progress_through_levels_execute()
+#         # This function is called in parent_execute() and parent_execute()
 #         # This function points to sub-functions that handle mainterm objects containing a "use" key
 #         # If "use" key returns a string then it has no children, execute function built to handle.
 #         if isinstance(mainterm["use"], str):
@@ -2581,7 +2559,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #         Returns
 #             None.
 #         """
-#         # This function is called in parent_execute() and progress_through_levels_execute()
+#         # This function is called in parent_execute() and parent_execute()
 #         # This function points to sub-functions that handle mainterm objects containing a "see" key
 #         # If mainterm's "see" key returns a string then it has no children, execute function built to handle.
 #         if isinstance(mainterm["see"], str):
@@ -2593,7 +2571,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             self.execute_group_2_3(mainterm)
 #         else:
 #             pprint(mainterm)
-#             raise LookupError("Code not prepared for mainterm key structure -> progress_through_levels_execute()")
+#             raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 
 #     def execute_group_2_1(self, mainterm):
 #         print("--------execute_group_2_1--------")
@@ -2902,7 +2880,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             Information to user in form of print(). Will integrate with PCS Table.
 #         """
 #         # Execute Function
-#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
 #         # This function handles a mainterm object with keys:
 #             # {"title", "code"}
 #             # {'code', '_level'}
@@ -2948,7 +2926,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             Information to user in form of print(). Will integrate with PCS Table.
 #         """
 #         # Execute Function
-#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
 #         # This function handles a mainterm object with keys:
 #             # {"title", "tab"}
 #             # {'title', 'tab', '_level'}
@@ -2984,7 +2962,7 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
 #             Information to user in form of print(). Will integrate with PCS Table.
 #         """
 #         # Execute Function
-#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().progress_through_levels_execute()
+#         # This function is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
 #         # This function handles a mainterm object with keys:
 #             # "title", "codes"}
 #             # {'title', 'codes', '_level'}
