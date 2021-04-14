@@ -1,4 +1,5 @@
-# master_test.py
+# master.py
+# Version 1
 # Logan Bonsignore - 4/12/2021
 
 # Description:
@@ -448,17 +449,17 @@ class Parser:
                     for subterm in mainterm["term"]:
                         # If not in accounted_for_structures, raise LookupError
                         if subterm.keys() in accounted_for_structures:
-                            # This True value is used in execute_single_level()
-                            return True
+                            return False
                         else:
-
+        
                             ### TESTING ###
                             if testing:
                                 # Used in Master_Test.test_single_level_structure() to indicate a varying subterm structure
                                 return "Error"
 
-                            pprint(mainterm)
-                            raise LookupError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
+                            # pprint(mainterm)
+                            # raise LookupError("One subterm in the mainterm contains a key that is different from the other subterm keys and it is not accounted for.")
+                            return True
 
         # NOTE: Add functionality here to handle mainterm's with different structures
         # Could call an execute function here depending on structure found
@@ -475,33 +476,58 @@ class Parser:
         # This function aggregates the next level's terms from a mainterm's "term" key based on
         # developer provided keys passed as key_1 and key_2
         # It then prints choices for the user and asks user to choose which subterm they want to use
-        if key_2:
-            text_choices = [term[key_1][key_2] for term in mainterm["term"]]
-        else:
+        # Extreme Example: 'Catheterization'
+        text_choices = []
+        for term in mainterm["term"]:
             try:
-                text_choices = [term[key_1] for term in mainterm["term"]]
-            except KeyError:
-                try:
-                    text_choices = [term["__text"] for term in mainterm["term"]]
-                except KeyError:
+                if key_2:
+                    title_value = term[key_1][key_2]
+                    if isinstance(title_value, str):
+                        text_choices.append(title_value)
+                    else:
+                        title_value = term["title"]
+                        text_choices.append(title_value)
+                else:
                     try:
-                        text_choices = [term["see"] for term in mainterm["term"]]
-                    except KeyError:
-                        # This mainterm has a blank subterm that does not contain a 'title' value
-                        # This is used to catch that error
-                        # Use this list to add terms that have errors like this
-                        # May want to create a member variable to represent
-                        if mainterm["title"] in ["Radiation Therapy"]:
-                            text_choices = []
-                            for subterm in mainterm["term"]:
-                                try:
-                                    text_choices.append(subterm["see"])
-                                except KeyError:
-                                    # Skipping one subterm that has no title value
-                                    # Ex: Radiation Therapy'
-                                    pass
+                        title_value = term[key_1]
+                        if isinstance(title_value, str):
+                            text_choices.append(title_value)
                         else:
-                            raise LookupError("Could not find term to use as 'title' of subterm. -> get_render_ask_next_level_terms()")
+                            title_value = term["title"]
+                            text_choices.append(title_value)
+                    except KeyError:
+                        try:
+                            title_value = term["title"]
+                            if isinstance(title_value, str):
+                                text_choices.append(title_value)
+                        except KeyError:
+                            try:
+                                title_value = term["__text"]
+                                if isinstance(title_value, str):
+                                    text_choices.append(title_value)
+                            except KeyError:
+                                try:
+                                    title_value = term["see"]
+                                    if isinstance(title_value, str):
+                                        text_choices.append(term["see"])
+                                except KeyError:
+                                    # This mainterm has a blank subterm that does not contain a 'title' value
+                                    # This is used to catch that error
+                                    # Use this list to add terms that have errors like this
+                                    # May want to create a member variable to represent
+                                    if mainterm["title"] in ["Radiation Therapy"]:
+                                        text_choices = []
+                                        for subterm in mainterm["term"]:
+                                            try:
+                                                text_choices.append(subterm["see"])
+                                            except KeyError:
+                                                # Skipping one subterm that has no title value
+                                                # Ex: Radiation Therapy'
+                                                pass
+                                    else:
+                                        raise LookupError("Could not find term to use as 'title' of subterm. -> get_render_ask_next_level_terms()")
+            except KeyError:
+                raise LookupError("Could not find term to use as 'title' of subterm")
 
         print(text_choices)
         user_input = input("Choose term that most correlates to this medical case: ")
@@ -542,37 +568,31 @@ class Single_Level_Parser(Parser):
         # The first subterm is used to understand mainterm's structure
         # It is assumed that all subterms have the same key structure (which may not be true, Logan in progress of adding functionality)
         # Based on structure of subterms found, execute function that can handle structure
-        first_subterm = mainterm["term"][0]
-        if {"see", "_level"} == first_subterm.keys():
-            self.check_for_varying_subterm_structures(mainterm, {"see", "_level"})
+
+        first_subterm_keys = mainterm["term"][0].keys()
+        varying = self.check_for_varying_subterm_structures(mainterm, first_subterm_keys)
+        # Handle mainterm with varying subterm structures
+        if varying:
+            # Get next level choices for user
+            user_input = self.get_render_ask_next_level_terms(mainterm, "title")
+            # Find new mainterm based on user input
+            new_mainterm = self.find_matching_mainterm_to_user_input(mainterm, user_input)
+            # Execute new mainterm
+            self.execute_tree(new_mainterm)
+            return
+
+        if {"see", "_level"} == first_subterm_keys:
             self.execute_single_level_1(mainterm)
-        elif {"title", "see", "_level"} == first_subterm.keys():
-            self.check_for_varying_subterm_structures(mainterm, {"title", "see", "_level"})
+        elif {"title", "see", "_level"} == first_subterm_keys:
             self.execute_single_level_2(mainterm)    
-        elif {"use", "_level"} == first_subterm.keys():
-            self.check_for_varying_subterm_structures(mainterm, {"use", "_level"})
+        elif {"use", "_level"} == first_subterm_keys:
             self.execute_single_level_3(mainterm)
-        elif {"code", "_level"} == first_subterm.keys():
-            self.check_for_varying_subterm_structures(mainterm, {"code", "_level"})
+        elif {"code", "_level"} == first_subterm_keys:
             self.execute_single_level_4(mainterm)
-        elif {"title", "code", "_level"} == first_subterm.keys():
-            self.check_for_varying_subterm_structures(mainterm, {'title', 'code', '_level'})
+        elif {"title", "code", "_level"} == first_subterm_keys:
             self.execute_tree(mainterm)
-        elif {"title", "codes", "_level"} == first_subterm.keys():
-            varying_structures = self.check_for_varying_subterm_structures(mainterm, {"title', 'codes', '_level"})
-            if varying_structures:
-                self.execute_single_level_5(mainterm)
-            else:
-
-                ### TESTING ###
-                if testing:
-                    # Indicate failed test
-                    test_flag = False
-                    return
-                
-                raise LookupError("Code not prepared for mainterm's keys -> execute_single_level()")
-
-
+        elif {"title", "codes", "_level"} == first_subterm_keys:
+            self.execute_single_level_5(mainterm)
         else:
 
             ### TESTING ###
