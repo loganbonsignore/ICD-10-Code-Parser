@@ -4,8 +4,8 @@
 # Logan Bonsignore - 4/12/2021
 
 # Ask user if running test or if executing query
-user_choice = input("Are you running a test? (y/n): ")
-if user_choice.lower() == "y":
+user_choice = input("Are you running a test or query? (t/q) : ")
+if user_choice.lower() == "t":
     testing = True
 else:
     testing = False
@@ -23,16 +23,16 @@ with open("Data/JSON/PCS_Index.json") as index_file:
 
     # All code modifications made for testing are under a '### TESTING ###' tag
 
-    # Master_Test() class
+    # Master_Test class
         # This class contains methods and member variables used to conduct testing
         # It is not used in the execution of queries, it is only used for testing
     # Execute functions (functions that return information to the user)
         # 'Testing blocks' are used to check for availability of data the method needs to execute properly. The 'testing block' does not return data to the user.
         # The 'testing block' creates a global variable test_flag = True if expected data is present OR a global variable test_flag = False if expected data is not present
-    # Parser().execute_tree()
-        # Methods from the Master_Test() class are used in place of single_level_parser.execute_single_level(mainterm) and progress_through_levels(mainterm)
-            # execute_single_level(mainterm) -> test_term_with_single_level_structure(mainterm)
-            # progress_through_levels(mainterm) -> test_multi_level_structure(mainterm)
+    # Parser.execute_tree()
+        # Methods from the Master_Test class are used in place of Parser.execute_single_level() and Parser.progress_through_levels()
+            # execute_single_level() -> test_term_with_single_level_structure()
+            # progress_through_levels() -> test_multi_level_structure()
         # This ensures all possible combinations of mainterms are tested without the need for user input
 
 #################################################### Test Class Definitions #########################################################
@@ -93,7 +93,8 @@ class Master_Test:
             raise ValueError("Unknown test flag returned.")
 
     def test_term_with_single_level_structure(self, mainterm):
-        # This method executes tests of individual subterms in a mainterm object with a single level structure
+        # This method tests mainterm objects with a single level structure (mainterm has "term" key, but no subterms have a "term" key)
+        # This method executes tests of each individual subterm
         global test_flag
         test_flag = None # Value of None ensures test_flag is modified in check_for_varying_subterm_structures()
 
@@ -103,12 +104,12 @@ class Master_Test:
         if test_flag == False:
             self.unsuccessful_tests.append(mainterm)
 
-        # Run Parser class method to ensure successful on all terms
+        # Run Parser class methods to ensure successful on all terms
         parser_test = Parser()
         titles = parser_test.get_next_level_title_values(mainterm)
         self.find_matching_mainterm_to_user_input_test(mainterm)
 
-        # If all Parser() functions pass
+        # If all Parser functions pass
         # Test each subterm using execute_tree()
         for subterm in mainterm['term']:
             # Reset test flag for each subterm
@@ -201,7 +202,7 @@ class Master_Test:
 
     def handle_no_level_or_single_level_structure(self, structure, subterm):
         # This method is called in test_multi_level_structure()
-        # This method points to other functions
+        # This method points to other sub-functions built to handle certain object structures
         if structure == "no_level_structure":
             # Execute method built to handle no level structure
             mainterm_parser.parent_execute(subterm)
@@ -212,25 +213,17 @@ class Master_Test:
             raise ValueError("Bad structure value, '{structure}', passed to this method.")
     
     def check_for_varying_subterm_structures(self, mainterm):
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-            set_like_object -> set containing ordered dictionary keys which are being compared.
-        Returns
-            True
-            LookupError
-        """
+        # This method is used to determine which mainterms have subterms with structures that vary from one antoher
+        # Change the global variable test_flag value in the else statement to count varying structures as unsuccessful
+        # This method is called in Master_Test.test_term_with_single_level_structure()
+        # Accounted for structures (maintained manually)
         accounted_for_structures = [
             {'title', 'codes', '_level'},
             {'title', 'code', '_level'},
             {"code", "_level"},
             {"title", "code", "_level"},
         ]
-        # This method is used to determine which mainterms have subterms with structures that vary from one antoher
-        # Change the global variable test_flag value to count varying structures as unsuccessful
-        # This method is called in Master_Test.test_term_with_single_level_structure()
-        # It will raise LookupError if a mainterm structure is found that our code isn't prepared to handle
-        # set_like_object is passed to the method and is a set of the first subterm's keys
+        # Get first subterm objects keys
         first_subterm_keys = mainterm["term"][0].keys()
 
         for term in mainterm["term"]:
@@ -248,9 +241,9 @@ class Master_Test:
                             pass
                         else:
                             global test_flag
-                            # Use this if you DO want to add all mainterms with varying structures to the unsuccessful test list
+                            # Use False if you DO want to add all mainterms with varying structures to the unsuccessful test list
                             # test_flag = False
-                            # Use this if you DONT want to add all mainterms with varying structures to the unsuccessful test list
+                            # Use None if you DONT want to add all mainterms with varying structures to the unsuccessful test list
                             test_flag = None
 
     def find_matching_mainterm_to_user_input_test(self, mainterm):
@@ -291,57 +284,41 @@ class Master_Test:
 
 class Parser:
     def __init__(self):
-        self.pcs_component = False # Flag to let output method know if need to account for PCS Table component.
+        self.pcs_component = False # Used to hold PCS Table component if provided in index
 
-    def execute_tree(self, mainterm):
-        """
-        Args:
-            Mainterm -> Mainterm object in focus.
-            single_level_check -> Bool value signaling to check for single level.
-        Returns:
-            None.
-        """
+    def execute_tree(self, mainterm) -> None:
+        print("---------execute_tree---------")
         # This method acts as the 'go-to' execution funtion for this script
         # All "mainterm" objects are passed to this method
         # This method checks for levels, then executes functions built to handle the mainterm's structure
         levels = self.check_for_levels_in_mainterm(mainterm)
         # Check for levels to see which type of execute method is needed
         if levels == "level_1":
-            print("--------EXECUTE SINGLE LEVEL--------")
 
             ### TESTING ###
             if testing:
                 master_test.test_term_with_single_level_structure(mainterm)
                 return
-
-            # Used to execute mainterms that have multiple subterms "_level" key equal to "1" 
-            # Does not include mainterms with subterms that have "_level" equal to "2" or greater
+            
+            # Used to execute mainterms that have a single level structure (multiple subterms with a "_level" key equal to "1")
             self.execute_single_level(mainterm)
         elif not levels:
-            print("--------PARENT EXECUTE--------")
-            # Used to execute mainterms that do not have levels
+            # Used to execute mainterms that do not have levels (no "term" key)
             mainterm_parser.parent_execute(mainterm)
         else:
-            print("--------PROGRESS THROUGH LEVELS--------")
 
             ### TESTING ###
             if testing:
                 master_test.test_multi_level_structure(mainterm)
                 return
 
-            # Used to execute mainterms with subterms that have "_level" of 2 or greater
+            # Used to execute mainterms that have a multi level structure (subterms that have a "_level" key equal to "1" AND terms inside of those subterms that have a "_level" key equal to "2" or greater)
             self.progress_through_levels(mainterm)
             
-    def progress_through_levels(self, mainterm):
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns:
-            None.
-        """
-        # This method handles "mainterm" objects that contain more than 1 level
-        # It iterates through levels until a final code or term is found
-        # This method executes queries using sub-method Mainterm_Parser().parent_execute()
+    def progress_through_levels(self, mainterm) -> None:
+        print("---------progress_through_levels---------")
+        # This method handles "mainterm" objects with a multi level structure
+        # It iterates through levels based on user input until a no level structure is found and is executed
         level_flag = True
         while level_flag:
             # Returns all "title" values from the next level of subterms
@@ -374,11 +351,9 @@ class Parser:
                     level_flag = False
                     mainterm_parser.parent_execute(mainterm)
 
-    def execute_single_level(self, mainterm):
-        print("----------get_render_ask_execute_single_level_terms_no_varying_structures----------")
-        # This method searches a mainterm with a single level structure for text choices for user to choose from
-        # then, prints them out and asks user for input, then searches single level structure mainterm to find new mainterm object of focus based on user input
-        # Then executes new mainterm through execute_tree()
+    def execute_single_level(self, mainterm) -> None:
+        print("---------execute_single_level---------")
+        # This method handles "mainterm" objects with a single level structure
         # Find text to use as user's choice for selected individual term in single level structure
         text_choices = self.get_next_level_title_values(mainterm)
         # Print choices to user
@@ -390,12 +365,13 @@ class Parser:
             self.handle_bad_user_query(user_input, text_choices)
         # Capture new mainterm of focus
         new_mainterm = self.find_matching_mainterm_to_user_input(mainterm, user_input)
-        # Execute with new mainterm
+        # Execute with new mainterm that has no level structure
         mainterm_parser.parent_execute(new_mainterm)
 
-    def find_matching_mainterm_to_user_input(self, mainterm, user_input):
+    def find_matching_mainterm_to_user_input(self, mainterm, user_input) -> object:
         # This method searches a mainterm object's subterm list to find a subterm that matches the user's input
         # Add functionality to check new keys by adding another try/except block with the key pattern you need
+        # The keys checked in this method should match the keys checked in Parser.get_next_level_title_values()
         # Flag used to indicate if term found
         term_found_flag = False
         for term in mainterm["term"]:
@@ -440,7 +416,7 @@ class Parser:
                             # Passing here because we need to check all subterms for match before raising error
                             pass
 
-        # If term found, execute with new mainterm
+        # If term found, return new mainterm
         if term_found_flag:
             return new_mainterm
         # Raise error if term not found
@@ -449,15 +425,10 @@ class Parser:
             pprint(term)
             raise LookupError("Could not find next level term that matches user input.")
     
-    def get_next_level_title_values(self, mainterm):
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            List of "title" values found on next level of mainterm.
-            If no next level, returns None.
-        """
-        # This method returns the text value of each next level subterm in a mainterm["term"] list
+    def get_next_level_title_values(self, mainterm) -> list:
+        # This method returns the identifying text value of each subterm in a mainterm["term"] list
+        # Add functionality to check new keys by adding another try/except block with the key pattern you need
+        # The keys checked in this method should match the keys checked in Parser.find_matching_mainterm_to_user_input()
         # If the "mainterm" does not have subterms, the method returns None
         text_choices = []
         try:
@@ -503,37 +474,22 @@ class Parser:
 
         return text_choices
     
-    def handle_bad_user_query(self, user_input, new_level_terms):
-        """
-        Args
-            user_input -> User's choice on subterm to choose next.
-            new_level_terms -> All possible choices for the user to make
-        Returns:
-            New user input that matches a usable term
-        """
-        # This method is called in progress_through_levels() and get_render_ask_next_level_terms()
+    def handle_bad_user_query(self, user_input, new_level_terms) -> str:
+        # This method is called in Parser.progress_through_levels() and Parser.progress_through_levels()
         # If a user searches for a term that is not valid, give user three more trys
-        # If user query term is not a valid term raise LookupError
+        # If user's query term is not a valid after the third try, raise error
         bad_query_flag = 0
         # User gets 5 query trys before throwing error
-        while user_input not in new_level_terms and bad_query_flag <= 3:
+        while user_input not in new_level_terms:
             print("Your choice is not valid. Please try again.")
             user_input = input("Choose term : ")
             bad_query_flag += 1
-            if bad_query_flag > 3:
+            if bad_query_flag == 3:
                 raise LookupError("The term you've chosen does not match any valid options. Please try your query again.")
         return user_input
     
-    def check_for_levels_in_mainterm(self, mainterm):
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            - "level_1"
-            - True
-            - False
-        """
-        # This method checks for levels in the Mainterm object in focus.
+    def check_for_levels_in_mainterm(self, mainterm) -> bool or str:
+        # This method analyzes a mainterm object to determine what type of structure it has (no level, single level or multi level)
         # It can return:
             # 'level_1' -> Indicates multiple terms on level 1 to be handled, no further levels.
             # True -> Indicates multiple levels to be handled.
@@ -560,13 +516,7 @@ class Parser:
         except KeyError:
             return False
         
-    def create_new_mainterm_generator(self, index):
-        """
-        Args
-            index -> JSON document representing the PCS Index.
-        Return
-            Generator object of all 'mainterm' objects
-        """
+    def create_new_mainterm_generator(self, index) -> object:
         # This method is used to create a new generator object of all 'mainterm' objects
         # It is needed in situations where we are re-querying the mainterms and have already iterated through a generator object
         # If we dont create a new generator object, the next iteration on that object will start where the last iteration left off
@@ -574,20 +524,15 @@ class Parser:
         return (mainterms_new for letter in letters_new for mainterms_new in letter["mainTerm"])
 
 class Mainterm_Parser(Parser):
-    def parent_execute(self, mainterm):
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            None
-        """
+    def parent_execute(self, mainterm) -> None:
+        print("---------parent_execute---------")
 
         ### TESTING ###
         if testing:
             global test_flag
 
         # This method is called when a mainterm has a no level structure (no "term" key)
-        # Depending on the mainterm's key structure, an execute method built to handle given structure is called
+        # Depending on the mainterm's key structure, an execute function built to handle given structure is called
         if {"title", "use"} == mainterm.keys():
             self.execute_group_1(mainterm)
         elif {'code', '_level'} == mainterm.keys():
@@ -638,14 +583,8 @@ class Mainterm_Parser(Parser):
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
     
-    def execute_group_1(self, mainterm):
-        print("--------execute_group_1--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            None.
-        """
+    def execute_group_1(self, mainterm) -> None:
+        print("---------execute_group_1---------")
         # This method is called in parent_execute()
         # This method points to sub-functions that handle mainterm objects containing a "use" key
         # If "use" key returns a string then it has no children, execute method built to handle.
@@ -666,14 +605,8 @@ class Mainterm_Parser(Parser):
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_1()")
     
-    def execute_group_1_1(self, mainterm):
-        print("--------execute_group_1_1--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_1_1(self, mainterm) -> print:
+        print("---------execute_group_1_1---------")
 
         ### TESTING ###
         if testing:
@@ -693,7 +626,7 @@ class Mainterm_Parser(Parser):
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in execute_group_1()
         # This method is used to handle mainterm objects that contain a "use" key that has no children
         # This method returns a term that corresponds to a code in a PCS Table
@@ -713,14 +646,8 @@ Use the code associated with term '{mainterm['use']}' in the PCS Table.""")
             # Resetting pcs_component flag
             self.pcs_component = False
 
-    def execute_group_1_2(self, mainterm):
-        print("--------execute_group_1_2--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_1_2(self, mainterm) -> print:
+        print("---------execute_group_1_2---------")
 
         ### TESTING ###
         if testing:
@@ -741,7 +668,7 @@ Use the code associated with term '{mainterm['use']}' in the PCS Table.""")
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in execute_group_1()
         # This method is used to handle mainterm objects that contain a "use" key that has "tab" and "__text" keys
         # This method returns the PCS Table which the user needs to use
@@ -757,8 +684,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             # Resetting pcs_component flag
             self.pcs_component = False
 
-    def execute_group_2(self, mainterm):
-        print("--------execute_group_2--------")
+    def execute_group_2(self, mainterm) -> None:
+        print("---------execute_group_2---------")
         """
         Args
             mainterm -> Mainterm object in focus.
@@ -787,21 +714,15 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> parent_execute()")
 
-    def execute_group_2_1(self, mainterm):
-        print("--------execute_group_2_1--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            None.
-        """
+    def execute_group_2_1(self, mainterm) -> None:
+        print("---------execute_group_2_1---------")
 
         ### TESTING ###
         if testing:
             global test_flag
 
         # This method is called in execute_group_2()
-        # This method handles mainterm objects with a "see" key that need to re-query the data to find another mainterm in the index
+        # This method handles mainterm objects with a "see" key that need to re-query the data to find another mainterm object in the index
         new_term = mainterm["see"]
         print(f"--Redirected to term '{new_term}'.") # Logging
         # Create new generator object
@@ -848,7 +769,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                     return
 
                 term_found_flag = True
-                print("NEED method TO HANDLE. INTEGRATE TO PCS TABLE") 
+                print("NEED METHOD TO HANDLE. INTEGRATE TO PCS TABLE") 
 
         # If we still havent found a match look for wording patterns
         if not term_found_flag:
@@ -871,14 +792,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1()")
 
-    def custom_query(self, new_term):
-        print("--------custom_query--------")
-        """
-        Args
-            new_term -> "see" value that contains 3 separate search terms in one string.
-        Returns
-            None.
-        """
+    def custom_query(self, new_term) -> None:
+        print("---------custom_query---------")
         # This method is called in execute_group_2_1()
         # These are custom querys that are hard coded because of there unique "see" value structure 
         # 'Ligation, hemorrhoid'
@@ -939,14 +854,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
 
             raise LookupError(f"Do not have a method build to handle lookup term '{new_term}' -> custom_query()")
 
-    def handle_pcs_table_component_1(self, new_term):
-        print("--------handle_pcs_table_component_1--------")
-        """
-        Args
-            new_term -> "see" value that contains a string representing a new search term and PCS Table component.
-        Returns
-            None.
-        """
+    def handle_pcs_table_component_1(self, new_term) -> None:
+        print("---------handle_pcs_table_component_1---------")
         # This method is called in execute_group_2_1()
         # This method parses a string containing information returned from a "see" tag
         # The string tells us what the new search term is, the PCS column header to be used (pos), and the PCS component to be used
@@ -969,8 +878,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                 self.pcs_component = (pcs_pos, pcs_component)
                 self.execute_tree(mainterm_1)
 
-    def handle_pcs_table_component_2(self, new_term):
-        print("--------handle_pcs_table_component_2--------")
+    def handle_pcs_table_component_2(self, new_term) -> None:
+        print("---------handle_pcs_table_component_2---------")
         # Ex: 'Clipping, aneurysm'
         # This method is called in execute_group_2_1()
         # This method parses a string containing information returned from a "see" tag
@@ -994,14 +903,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                 self.pcs_component = (pcs_pos, pcs_component)
                 self.execute_tree(mainterm_1)
 
-    def execute_group_2_1_1(self, split_term):
-        print("--------execute_group_2_1_1--------")
-        """
-        Args
-            split_term -> two individual search terms gathered from a "see" value
-        Returns
-            None.
-        """
+    def execute_group_2_1_1(self, split_term) -> None:
+        print("---------execute_group_2_1_1---------")
         # This method is called in execute_group_2_1()
         # This method re-queries the data to find new_mainterm given by "see" value
         # Once it finds the parent_search_term, it will find the child_search_term within the parent_search_term
@@ -1033,14 +936,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
 
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1_1()")
     
-    def execute_group_2_2(self, mainterm):
-        print("--------execute_group_2_2--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_2_2(self, mainterm) -> print:
+        print("---------execute_group_2_2---------")
 
         ### TESTING ###
         if testing:
@@ -1059,7 +956,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in execute_group_2()
         # This method handles mainterm objects with a "see" key that contains "codes" and "__text" keys
         code = mainterm["see"]["codes"]
@@ -1075,14 +972,8 @@ Each code corresponds to it's respective position number.""")
             # Resetting pcs_component flag
             self.pcs_component = False
         
-    def execute_group_2_3(self, mainterm):
-        print("--------execute_group_2_3--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_2_3(self, mainterm) -> print:
+        print("---------execute_group_2_3---------")
 
         ### TESTING ###
         if testing:
@@ -1101,7 +992,7 @@ Each code corresponds to it's respective position number.""")
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in execute_group_2()
         # This method handles mainterm objects with a "see" key that contains "tab" and "__text" keys
         table = mainterm["see"]["tab"]
@@ -1116,14 +1007,8 @@ The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given
             # Resetting pcs_component flag
             self.pcs_component = False
 
-    def execute_group_4(self, mainterm):
-        print("--------execute_group_4--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_4(self, mainterm) -> print:
+        print("---------execute_group_4---------")
 
         ### TESTING ###
         if testing:
@@ -1145,8 +1030,8 @@ The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given
                 test_flag = False
                 return
 
-        # Execute method
-        # This method is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
+        # Execute function
+        # This method is called in Mainterm_Parser().parent_execute()
         # This method handles a mainterm object with keys:
 #             {"title", "code"}
 #             {'code', '_level'}
@@ -1166,14 +1051,8 @@ Use final code: {mainterm['code']}. No further information given.""")
             # Resetting pcs_component flag
             self.pcs_component = False
         
-    def execute_group_5(self, mainterm):
-        print("--------execute_group_5--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_5(self, mainterm) -> print:
+        print("---------execute_group_5---------")
 
         ### TESTING ###
         if testing:
@@ -1192,7 +1071,7 @@ Use final code: {mainterm['code']}. No further information given.""")
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
         # This method handles a mainterm object with keys:
             # {"title", "tab"}
@@ -1207,14 +1086,8 @@ Go to table: {table}. No additional guidance given.""")
             # Resetting pcs_component flag
             self.pcs_component = False
 
-    def execute_group_6(self, mainterm):
-        print("--------execute_group_6--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_6(self, mainterm) -> print:
+        print("---------execute_group_6---------")
 
         ### TESTING ###
         if testing:
@@ -1232,7 +1105,7 @@ Go to table: {table}. No additional guidance given.""")
                 test_flag = False
                 return
 
-        # Execute method
+        # Execute function
         # This method is called in Mainterm_Parser().parent_execute() and Mainterm_Parser().parent_execute()
         # This method handles a mainterm object with keys:
             # "title", "codes"}
@@ -1249,14 +1122,8 @@ Each code corresponds to it's respective position number.""")
             # Resetting pcs_component flag
             self.pcs_component = False
 
-    def execute_group_7(self, mainterm):
-        print("--------execute_group_7--------")
-        """
-        Args
-            mainterm -> Mainterm object in focus.
-        Returns
-            Information to user in form of print(). Will integrate with PCS Table.
-        """
+    def execute_group_7(self, mainterm) -> print:
+        print("---------execute_group_7---------")
 
         ### TESTING ###
         if testing:
@@ -1306,15 +1173,21 @@ if not testing:
         mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
         # Ask user for query mainterm
         user_mainterm = input("Enter the medical term you want to search for : ")
+        # Flag used to ensure mainterm object is found
+        found = False
         # Search 'mainterms' for matching mainterm to user query
         for mainterm in mainterms:
             # If found matching mainterm
             if mainterm["title"] == user_mainterm:
                 # Execute the mainterm
-                parser = Parser() # Doing this to make sure pcs_component_flag is reset to False.Reset is also added into execute functions during if self.pcs_component checks. Can move this outside of while loop if makes more sense.
+                parser = Parser() # Doing this to make sure pcs_component_flag is reset to False. Flag reset is also done in execute functions during if self.pcs_component check. Can move this outside of while loop if makes more sense.
                 parser.execute_tree(mainterm)
+                found = True
                 break
-        user_flag = input("\nDo you want to search another term? (y/n) : ").lower()
+        if found:
+            user_flag = input("\nDo you want to search another term? (y/n) : ").lower()
+        else:
+            print("You're search did not match a mainterm. Please try again.")
 
 ################################################# Run Test - All Mainterms ####################################################
 ###############################################################################################################################
