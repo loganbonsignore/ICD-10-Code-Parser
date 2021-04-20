@@ -1,287 +1,9 @@
-# master_index_parse.py
-# Logan Bonsignore - 4/12/2021
-
-# Ask user if running test or if executing query
-user_choice = input("Are you running a test or query? (t/q) : ")
-if user_choice.lower() == "t":
-    testing = True
-else:
-    testing = False
-
-# Begin query
 import json
 from pprint import pprint # Used for debugging
 
 # Creating memory allocation to PSC Index json file
 with open("Data/JSON/PCS_Index.json") as index_file:
     index = json.load(index_file)
-
-#################################################### Testing Information ###########################################################
-####################################################################################################################################
-
-    # All code modifications made for testing are under a '### TESTING ###' tag
-
-    # Master_Test class
-        # This class contains methods and member variables used to conduct testing
-        # It is not used in the execution of queries, it is only used for testing
-    # 'Execute functions' (functions that return information to the user)
-        # 'Testing blocks' are used to check for the availability of data the function needs to execute properly. The 'testing block' does not return data to the user like the function does if executing a query.
-        # The 'testing block' creates a global variable test_flag = True if expected data is present OR a global variable test_flag = False if expected data is not present
-        # The global variable 'test_flag' is used determine the outcome of each test
-    # Parser.execute_tree()
-        # Methods from the Master_Test class are used in place of Parser.execute_single_level_structure() and Parser.execute_multi_level_structure()
-            # execute_single_level_structure() -> test_single_level_structure()
-            # execute_multi_level_structure() -> test_multi_level_structure()
-        # This ensures all possible combinations of mainterms are tested without the need for user input
-
-    # nonlocal
-
-#################################################### Test Class Definitions #########################################################
-#####################################################################################################################################
-
-### TESTING ###
-class Master_Test:
-    def __init__(self):
-        self.successful_tests = []
-        self.unsuccessful_tests = []
-
-    def determine_object_structure(self, mainterm: dict) -> str:
-        # This method is used to determine structure types of mainterm objects
-        # Returns string value indicating which type of structure the mainterm has
-        single_level_structure = False
-        try:
-            # If the mainterm object has a "term" key, this indicates the object has either a single or multi level structure
-            for subterm in mainterm["term"]:
-                try:
-                    # If any subterm object has a "term" key, this indicates the Mainterm object has
-                    # a multi level structure
-                    if subterm["term"]:
-                        # Subterm contains levels, mainterm object has multi level structure
-                        # Move onto next mainterm object to test
-                        return "multi_level_structure"
-                # If none of the subterms have a "term" key,
-                # this indicates the mainterm has a sigle level structure
-                except KeyError:
-                    # If subterm does not contain a "term" key, it has a sigle level structure
-                    # Mark single_level_structure as True
-                    single_level_structure = True
-        except KeyError:
-            # If the mainterm object does not have a "term" key, it has a no level structure
-            return "no_level_structure"
-        # If single_level_structure is True and the code did not return "multi level structure"
-        if single_level_structure:
-            # Indicate single_level_structure
-            return "single_level_structure"
-        else:
-            raise LookupError("No object structure found. single_level_structure is False.")
-
-    def test_no_levels_structure(self, mainterm):
-        # This method executes tests of mainterm objects that have a 'no level structure' (no "term" key)
-        # Execute mainterm that has no levels
-        mainterm_parser.execute_no_level_structure(mainterm)
-        # If sucessful test
-        if test_flag == True:
-            self.successful_tests.append(mainterm)
-        # If unsucessful test
-        elif test_flag == False:
-            # Check for mainterm objects that are known successful when tested manually
-            # Accounted for in get_next_level_title_values()
-            # One subterm of each mainterm below contains only a "_level" key with no data included. 
-            if mainterm["title"] not in ["Radiation Therapy", "Radiation treatment"]:
-                # Add subterm to list of unsuccessful tests
-                self.unsuccessful_tests.append(mainterm)
-        else:
-            raise ValueError("Unknown test flag returned.")
-
-    def test_single_level_structure(self, mainterm) -> None:
-        # This method tests mainterm objects with a 'single level structure' (mainterm has "term" key, but no subterms have a "term" key)
-        # This method executes tests of each individual subterm
-        global test_flag 
-        test_flag = None # Value of None ensures test_flag is modified in check_for_varying_subterm_structures()
-
-        # Checking to see if any subterm structure's in a 'single level mainterm' have a varying structure that we do not account for in our code
-        # If unknown structure found, global variable 'test_flag' will be false after check_for_varying_subterm_structures() is executed
-        self.check_for_varying_subterm_structures(mainterm)
-        # NOTE: You can edit check_for_varying_subterm_structures() to decide if you want to count all mainterms with varying subterm structures as unsuccessful
-        if test_flag == False:
-            self.unsuccessful_tests.append(mainterm)
-
-        # Run Parser class methods to ensure successful on all terms
-        # These methods are used often during query execution. Run them here to test on all 'single level' structures
-        # Will throw error if cannot be executed
-        titles = parser_test.get_next_level_title_values(mainterm)
-        self.find_matching_mainterm_to_user_input_test(mainterm)
-
-        # Test each subterm using execute_tree()
-        for subterm in mainterm['term']:
-            # Reset test flag for each subterm
-            test_flag = False
-            # Execute subterm to find test outcome
-            parser.execute_tree(subterm)
-            # Reading global variable 'test_flag' to determine test outcome
-            # Successful test
-            if test_flag == True:
-                # If the subterm passes, add a tuple of mainterm object and passing subterm object to the successful_tests list
-                self.successful_tests.append((mainterm, subterm))
-            # Unsuccessful test
-            elif test_flag == False:
-                # Check for mainterm objects that are known successful when tested manually
-                # Accounted for in get_next_level_title_values()
-                # One subterm of each mainterm below contains only a "_level" key with no data included. 
-                if mainterm["title"] in ["Radiation Therapy", "Radiation treatment"]:
-                    self.successful_tests.append((mainterm, subterm))
-                    continue
-                # If the subterm fails, add a tuple of mainterm object and failing subterm object to the unsuccessful_tests list
-                self.unsuccessful_tests.append((mainterm, subterm))
-            else:
-                pprint(f"Mainterm: \n{mainterm}")
-                pprint(f"Subterm: \n{subterm}")
-                raise ValueError("Unknown test flag returned")
-
-    def test_multi_level_structure(self, mainterm) -> None:
-        # This method tests all possible code combinations of mainterms with 'multi level' strucutres (contains "term" key and has subterm which contains "term" key)
-        # It is built to handle up to 5 levels of terms
-        # To add capability for more levels, add another for loop like below
-        parser_test = Parser() # Used to test method in Parser class
-        # Test Parser class methods to ensure successful on all terms
-        titles = parser_test.get_next_level_title_values(mainterm)
-        self.find_matching_mainterm_to_user_input_test(mainterm)
-        for level_1 in mainterm["term"]:
-            # Check structure of mainterm object
-            structure = self.determine_object_structure(level_1)
-            # If not multi level structure, execute
-            if structure == "single_level_structure" or structure == "no_level_structure":
-                self.handle_no_level_or_single_level_structure(structure, level_1)
-            # If multi level structure, execute
-            elif structure == "multi_level_structure":
-                # Test Parser class method to ensure successful on all terms
-                titles = parser_test.get_next_level_title_values(mainterm)
-                self.find_matching_mainterm_to_user_input_test(mainterm)
-                # Iterate through subterm's next level
-                for level_2 in level_1["term"]:
-                    # Find the structure
-                    structure = self.determine_object_structure(level_2)
-                    # If find the end, execute test
-                    if structure == "single_level_structure" or structure == "no_level_structure":
-                        self.handle_no_level_or_single_level_structure(structure, level_2)
-                    elif structure == "multi_level_structure":
-                        # Test Parser class method to ensure successful on all terms
-                        titles = parser_test.get_next_level_title_values(mainterm)
-                        self.find_matching_mainterm_to_user_input_test(mainterm)
-                        for level_3 in level_2["term"]:
-                            # Find the structure
-                            structure = self.determine_object_structure(level_3)
-                            # If find the end, execute test
-                            if structure == "single_level_structure" or structure == "no_level_structure":
-                                self.handle_no_level_or_single_level_structure(structure, level_3)
-                            elif structure == "multi_level_structure":
-                                # Test Parser class method to ensure successful on all terms
-                                titles = parser_test.get_next_level_title_values(mainterm)
-                                self.find_matching_mainterm_to_user_input_test(mainterm)
-                                for level_4 in level_3["term"]:
-                                    # Find the structure
-                                    structure = self.determine_object_structure(level_4)
-                                    # If find the end, execute test
-                                    if structure == "single_level_structure" or structure == "no_level_structure":
-                                        self.handle_no_level_or_single_level_structure(structure, level_4)
-                                    elif structure == "multi_level_structure":
-                                        # Test Parser class method to ensure successful on all terms
-                                        titles = parser_test.get_next_level_title_values(mainterm)
-                                        self.find_matching_mainterm_to_user_input_test(mainterm)
-                                        for level_5 in level_4["term"]:
-                                            # Find the structure
-                                            structure = self.determine_object_structure(level_5)
-                                            # If find the end, execute test
-                                            if structure == "single_level_structure" or structure == "no_level_structure":
-                                                self.handle_no_level_or_single_level_structure(structure, level_1)
-                                            elif structure == "multi_level_structure":
-                                                raise LookupError("Found a level 6 term. Add another iteration for the next level to test method.")
-
-    def handle_no_level_or_single_level_structure(self, structure, subterm) -> None:
-        # This method is called in test_multi_level_structure()
-        # This method points to sub-functions built to handle certain object structures
-        if structure == "no_level_structure":
-            # Execute method built to handle no level structure
-            mainterm_parser.execute_no_level_structure(subterm)
-        elif structure == "single_level_structure":
-            # Execute method built to handle no level structure
-            self.test_single_level_structure(subterm)
-        else:
-            raise ValueError("Bad structure value, '{structure}', passed to this method.")
-    
-    def check_for_varying_subterm_structures(self, mainterm) -> None:
-        # This method is used to determine which mainterms have subterms with structures that vary from one another
-        # Change the global variable test_flag value in the else statement to count varying structures as unsuccessful
-        # This method is called in Master_Test.test_single_level_structure()
-        # Accounted for structures (maintained manually)
-        accounted_for_structures = [
-            {'title', 'codes', '_level'},
-            {'title', 'code', '_level'},
-            {"code", "_level"},
-            {"title", "code", "_level"},
-        ]
-        # Get first subterm objects keys
-        first_subterm_keys = mainterm["term"][0].keys()
-
-        for term in mainterm["term"]:
-            # Extracting keys of subterm
-            term_keys = term.keys()
-            # Iterating through subterm keys to check if structures vary
-            for key in term_keys:
-                # If the subterm's key is not in passed variable set_like_object
-                # This means there is a subterm that contains a key that is different from the other subterm's keys
-                if key not in first_subterm_keys:
-                    # Iterate through subterms and check that keys are not in accounted_for_structures
-                    for subterm in mainterm["term"]:
-                        # If not in accounted_for_structures, raise LookupError
-                        if subterm.keys() in accounted_for_structures:
-                            pass
-                        else:
-                            # NOTE: Make edits here to change outcome in test_single_level_structure()
-                            global test_flag
-                            # Use None if you want to count all mainterms with varying structures as successful (wont add to successful_test list, will continue more tests in test_single_level_structure())
-                            # Will only count mainterms successful if the structure is accounted for in the accounted_for_strucutures list
-                            test_flag = None
-                            # Use False if you want to count all mainterms with varying structures as failed (add to unsuccessful test list)
-                            # Must also comment out the sets in the accounted_for_strucutures list
-                            # test_flag = False
-
-    def find_matching_mainterm_to_user_input_test(self, mainterm) -> None:
-        # This method is used in testing to ensure that a text value is found for each next level subterm.
-        # This simulates looking for a subterm that matches user input when executing a query
-        # This method is near identical to Parser.find_matching_mainterm_to_user_input() but is slightly modified for testing purposes ('pass' statements)
-        # This method will raise an error is it cannot find a text value in the subterm
-        for term in mainterm["term"]:
-            try:
-                if term["title"]:
-                    pass
-            except KeyError:
-                try:
-                    if isinstance(term["see"], str):
-                        pass
-                    elif term["see"]["__text"]:
-                        pass
-                except KeyError:
-                    try:
-                        if isinstance(term["use"], str):
-                            pass
-                        elif term["use"]["__text"]:
-                            pass
-                    except KeyError:
-                        try:
-                            if term["code"]:
-                                pass
-                        except KeyError:
-                            # If no option of text or anything else, pass
-                            if {"_level"} == term.keys():
-                                pass
-                            # If there is an option for some sort of text, raise error
-                            else:
-                                pprint(mainterm)
-                                raise LookupError("Couldn't find subterm key that contains text. Add new functionality in Parser.find_matching_mainterm_to_user_input().")
-
-################################################# Query Class Definitions #####################################################
-###############################################################################################################################
 
 class Parser:
     def __init__(self):
@@ -295,24 +17,12 @@ class Parser:
         # Check for levels to see which type of execute method is needed
         levels = self.check_for_levels_in_mainterm(mainterm)
         if levels == "level_1":
-
-            ### TESTING ###
-            if testing:
-                master_test.test_single_level_structure(mainterm)
-                return
-            
             # Execute mainterms that have a single level structure (one or more subterms with a "_level" key equal to "1")
             self.execute_single_level_structure(mainterm)
         elif not levels:
-            # Used to execute mainterms that have a 'no level' structure (no "term" key)
+            # Execute mainterms that have a 'no level' structure (no "term" key)
             mainterm_parser.execute_no_level_structure(mainterm)
         else:
-
-            ### TESTING ###
-            if testing:
-                master_test.test_multi_level_structure(mainterm)
-                return
-
             # Execute mainterms that have a 'multi level' structure (subterms that have a "_level" key equal to "1" AND terms inside of those subterms that have a "_level" key equal to "2" or greater)
             self.execute_multi_level_structure(mainterm)
             
@@ -528,11 +238,6 @@ class Parser:
 class Mainterm_Parser(Parser):
     def execute_no_level_structure(self, mainterm) -> None:
         print("---------execute_no_level_structure---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-
         # This method is called when a mainterm has a 'no level' structure (no "term" key)
         # Depending on the mainterm's key structure, an 'execute function' built to handle given structure is called
         if {"title", "use"} == mainterm.keys():
@@ -564,28 +269,13 @@ class Mainterm_Parser(Parser):
         elif {'title', 'tab', '_level'} == mainterm.keys():
             self.execute_group_5(mainterm)
         elif {"_level"} == mainterm.keys():
-
-            ### TESTING ###
-            if testing:
-                # Indicate failed test
-                test_flag = False
-                return
-
             # This is here as a precaution
             # The user will not get the choice to execute a mainterm object with only a '_level' key available
             # Filtering these keys out from user choice is done in Parser.get_next_level_title_values()
             # Could also point to a function that returns a message saying this choice is not valid in case there is a situation when this structure is called
             pprint(mainterm)
             raise LookupError("Tried to execute an object that only contains a '_level' key, no other data provided -> execute_no_level_structure()")
-
         else:
-
-            ### TESTING ###
-            if testing:
-                #Indicate failed test
-                test_flag = False
-                return
-
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_no_level_structure()")
     
@@ -600,38 +290,11 @@ class Mainterm_Parser(Parser):
         elif {"tab", "__text"} == mainterm["use"].keys():
             self.execute_group_1_2(mainterm)
         else:
-
-            ### TESTING ###
-            if testing:
-                #Indicate failed test
-                global test_flag
-                test_flag = False
-                return
-
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_1()")
     
     def execute_group_1_1(self, mainterm) -> print:
         print("---------execute_group_1_1---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                test = mainterm['use']
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                    # Indicate successful test
-                test_flag = True
-                return
-            except:
-                # Indicate failed test
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in execute_group_1()
         # This method is used to handle mainterm objects that contain a 'use' key that has no children
@@ -653,26 +316,6 @@ Use the code associated with term '{mainterm['use']}' in the PCS Table.""")
 
     def execute_group_1_2(self, mainterm) -> print:
         print("---------execute_group_1_2---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                table = mainterm["use"]["tab"]
-                text = mainterm["use"]["__text"]
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                    # Indicate successful test
-                test_flag = True
-                return
-            except KeyError:
-                # Indicate failed test
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in execute_group_1()
         # This method is used to handle mainterm objects that contain a 'use' key if the 'use' value is a dictionary with key structure {'tab', '__text'}
@@ -708,24 +351,11 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         elif {"tab", "__text"} == mainterm["see"].keys():
             self.execute_group_2_3(mainterm)
         else:
-
-            ### TESTING ###
-            if testing:
-                global test_flag
-                #Indicate failed test
-                test_flag = False
-                return
-
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2()")
 
     def execute_group_2_1(self, mainterm) -> None:
         print("---------execute_group_2_1---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-
         # This method is called in execute_group_2()
         # This method handles mainterm objects with a 'see' key that need to re-query the index to find another mainterm object
         # NOTE: Integrate with PCS Table
@@ -745,7 +375,7 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                 print(f"--Found '{new_term}' on first attempt--") # Logging
                 term_found_flag = True
                 self.execute_tree(new_mainterm_1)
-                break   
+                break
         # If we have not found a match, look for word patterns that indicate what's needed
         if not term_found_flag:
             # Split value returned from 'see' key to re-query data for match
@@ -766,18 +396,9 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
         if not term_found_flag:
             # If first word is introduction... (Ex: 'Drotrecogin alfa, infusion', 'Eptifibatide, infusion')
             if new_term.split(" ")[0] == "Introduction":
-
-                ### TESTING ###
-                if testing:
-                    # Used to avoid raising error later
-                    term_found_flag = True
-                    # Indicate failed test
-                    test_flag = False
-                    return
-
+                # NOTE: Still working on this functionality
                 term_found_flag = True
-                raise LookupError("'Introduction patterm' found. Integrate with PCS Table. -> execute_group_2_1()")
-
+                raise LookupError("'Introduction' pattern found. Integrate with PCS Table. -> execute_group_2_1()")
             # Look for words signifying a certain structure (Ex: 'Core needle biopsy', 'Punch biopsy')
             # This points to other methods used to extract 'pcs table components' provided in the mainterm's 'see' value
             if "with qualifier" in new_term or "with device" in new_term:
@@ -786,16 +407,8 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
             elif "using" in new_term:
                 term_found_flag = True
                 self.handle_pcs_table_component_2(new_term)
-
         # If still no match, raise error
         if not term_found_flag:
-
-            ### TESTING ###
-            if testing:
-                #Indicate failed test
-                test_flag = False
-                return
-
             pprint(mainterm)
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1()")
 
@@ -854,13 +467,6 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                                     if new_mainterm_4["see"] == "Mental Health Services":
                                         self.execute_tree(new_mainterm_4)
         else:
-
-            ### TESTING ###
-            if testing:
-                global test_flag
-                test_flag = False
-                return
-
             raise LookupError(f"Do not have a method build to handle lookup term '{new_term}' -> custom_query()")
 
     def handle_pcs_table_component_1(self, new_term) -> None:
@@ -936,36 +542,10 @@ Go to table {table}, use PCS Row containing text '{text}' in pos. 4-7 values."""
                         self.execute_tree(subterm)
                         break
         if not term_found_flag:
-
-            ### TESTING ###
-            if testing:
-                global test_flag
-                #Indicate failed test
-                test_flag = False
-                return
-
             raise LookupError("Code not prepared for mainterm key structure -> execute_group_2_1_1()")
     
     def execute_group_2_2(self, mainterm) -> print:
         print("---------execute_group_2_2---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                code = mainterm["see"]["codes"]
-                text = mainterm["see"]["__text"]
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in execute_group_2()
         # This method handles mainterm objects with a 'see' key that contains a key structure == {"codes", "__text"}
@@ -983,24 +563,6 @@ Each code corresponds to it's respective position number.""")
         
     def execute_group_2_3(self, mainterm) -> print:
         print("---------execute_group_2_3---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                table = mainterm["see"]["tab"]
-                text = mainterm["see"]["__text"]
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in execute_group_2()
         # This method handles mainterm objects with a "see" key that contains a key structure == {"tab", "__text"}
@@ -1017,27 +579,6 @@ The 'sections' may also correspond to a pos. 4-7 value in a PCS Row in the given
 
     def execute_group_4(self, mainterm) -> print:
         print("---------execute_group_4---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                try:
-                    code = mainterm['code']
-                    title = mainterm['title']
-                except KeyError:
-                    code = mainterm['code']
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in Mainterm_Parser().execute_no_level_structure()
         # This method handles a mainterm object with key structures:
@@ -1060,24 +601,6 @@ Use final code: {mainterm['code']}. No further information given.""")
         
     def execute_group_5(self, mainterm) -> print:
         print("---------execute_group_5---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                table = mainterm["tab"]
-                title = mainterm["title"]
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in Mainterm_Parser().execute_no_level_structure() and Mainterm_Parser().execute_no_level_structure()
         # This method handles a mainterm object with key structures:
@@ -1094,23 +617,6 @@ Go to table: {table}. No additional guidance given.""")
 
     def execute_group_6(self, mainterm) -> print:
         print("---------execute_group_6---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                code = mainterm["codes"]
-                if self.pcs_component:
-                    comp_1 = self.pcs_component[0]
-                    comp_2 = self.pcs_component[1]
-                    # Resetting pcs_component flag
-                    self.pcs_component = False
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in Mainterm_Parser().execute_no_level_structure() and Mainterm_Parser().execute_no_level_structure()
         # This method handles a mainterm object with key structures:
@@ -1129,20 +635,6 @@ Each code corresponds to it's respective position number.""")
 
     def execute_group_7(self, mainterm) -> print:
         print("---------execute_group_7---------")
-
-        ### TESTING ###
-        if testing:
-            global test_flag
-            try:
-                code = mainterm["code"]
-                codes_list = mainterm["term"]
-                codes = [codes["code"] for codes in codes_list]
-                test_flag = True
-                return
-            except:
-                test_flag = False
-                return
-
         # 'Execute function'
         # This method is called in Mainterm_Parser().execute_no_level_structure()
         # This method handles a mainterm object with key structures:
@@ -1168,128 +660,30 @@ Use code: {code}. If this case involves any of the following terms, {level_1_ter
                 # If next level terms apply, execute
                 self.execute_tree(mainterm)
 
-################################################# Execute Query - Continuous ##################################################
-###############################################################################################################################
+# Execute queries continuously until user is done
+parser = Parser()
+mainterm_parser = Mainterm_Parser()
 
-if not testing:
-    # Execute queries continuously until user is done
-    parser = Parser()
-    mainterm_parser = Mainterm_Parser()
-
-    user_flag = "y" # Flag used to determine if user wants to choose another term
-    while user_flag == "y":
-        # Create generator object of all 'letter' objects
-        letters = (letter for letter in index["ICD10PCS.index"]["letter"])
-        # Create generator object of all 'mainterm' objects
-        mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
-        # Ask user for query mainterm
-        user_mainterm = input("Enter the medical term you want to search for : ")
-        # Flag used to ensure mainterm object is found
-        found = False
-        # Search 'mainterms' for matching mainterm to user query
-        for mainterm in mainterms:
-            # If found matching mainterm
-            if mainterm["title"] == user_mainterm:
-                # Execute the mainterm
-                # parser = Parser() # Doing this to make sure pcs_component_flag is reset to False. Flag reset is also done in execute functions during if self.pcs_component check. Can move this outside of while loop if makes more sense.
-                parser.execute_tree(mainterm)
-                found = True
-                break
-        if found:
-            user_flag = input("\nDo you want to search another term? (y/n) : ").lower()
-        else:
-            print("You're search did not match a mainterm. Please try again.")
-
-################################################# Run Test - All Mainterms ####################################################
-###############################################################################################################################
-
-## TESTING ###
-if testing:
-    # Test All Mainterms
-    master_test = Master_Test()
-    mainterm_parser = Mainterm_Parser()
-    parser_test = Parser()
-
+user_flag = "y" # Flag used to determine if user wants to choose another term
+while user_flag == "y":
+    # Create generator object of all 'letter' objects
     letters = (letter for letter in index["ICD10PCS.index"]["letter"])
     # Create generator object of all 'mainterm' objects
     mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
+    # Ask user for query mainterm
+    user_mainterm = input("Enter the medical term you want to search for : ")
+    # Flag used to ensure mainterm object is found
+    found = False
     # Search 'mainterms' for matching mainterm to user query
     for mainterm in mainterms:
-        parser = Parser()
-        # Find structure of mainterm
-        structure = master_test.determine_object_structure(mainterm)
-        # If the mainterm object has no levels
-        if structure == "no_level_structure":
-            master_test.test_no_levels_structure(mainterm)
-        # If mainterm object has a single level structure
-        elif structure == "single_level_structure":
-            # Test all subterms in that single level structure
-            master_test.test_single_level_structure(mainterm)
-            # Determine outcome of test in above method
-        # If the mainterm object has a multi level structure
-        elif structure == "multi_level_structure":
-            # Test all subterms in that multi level structure
-            master_test.test_multi_level_structure(mainterm)
-        # If unknown structure, throw error
-        else:
-            print(structure)
-            pprint(mainterm)
-            raise ValueError("Unknown structure returned.")
-
-    print(f"Number of successful tests: {len(master_test.successful_tests)}")
-    print(f"Number of unsuccessful tests: {len(master_test.unsuccessful_tests)}")
-    total_tests_completed = len(master_test.successful_tests) + len(master_test.unsuccessful_tests)
-    print(f"Total Tests Completed: {total_tests_completed}")
-    print("---------Unsuccessful Tests---------")
-    for term in master_test.unsuccessful_tests:
-        if isinstance(term, tuple):
-            print(f"\nMainterm: {term[0]['title']} \nSubterm: {term[1]}")
-        else:
-            print(f"\nMainterm: {term['title']} \n {term}")
-
-################################################# Run Test - Individual Mainterm ##############################################
-###############################################################################################################################
-
-### TESTING ###
-# if testing:
-    # Test Singular Mainterm
-
-    # test_mainterm_title = "New Technology"
-
-    # master_test = Master_Test()
-    # mainterm_parser = Mainterm_Parser()
-    # parser_test = Parser()
-
-    # letters = (letter for letter in index["ICD10PCS.index"]["letter"])
-    # # Create generator object of all 'mainterm' objects
-    # mainterms = (mainterms for letter in letters for mainterms in letter["mainTerm"])
-    # # Search 'mainterms' for matching mainterm to user query
-    # for mainterm in mainterms:
-    #     if mainterm["title"] == test_mainterm_title:
-    #         parser = Parser()
-    #         # Find structure of mainterm
-    #         structure = master_test.determine_object_structure(mainterm)
-    #         # If the mainterm object has no levels
-    #         if structure == "no_level_structure":
-    #             master_test.test_no_levels_structure(mainterm)
-    #         # If mainterm object has a single level structure
-    #         elif structure == "single_level_structure":
-    #             # Test all subterms in that single level structure
-    #             master_test.test_single_level_structure(mainterm)
-    #             # Determine outcome of test in above method
-    #         # If the mainterm object has a multi level structure
-    #         elif structure == "multi_level_structure":
-    #             # Test all subterms in that multi level structure
-    #             master_test.test_multi_level_structure(mainterm)
-    #         # If unknown structure, throw error
-    #         else:
-    #             print(structure)
-    #             pprint(mainterm)
-    #             raise ValueError("Unknown structure returned.")
-
-    # print(f"Number of successful tests: {len(master_test.successful_tests)}")
-    # print(f"Number of unsuccessful_tests: {len(master_test.unsuccessful_tests)}")
-    # total_tests_completed = len(master_test.successful_tests) + len(master_test.unsuccessful_tests) +
-    # print(f"Total Tests Completed: {total_tests_completed}")
-    # print("---------Unsuccessful Tests---------")
-    # for term in master_test.unsuccessful_tests: pprint(term["title"])
+        # If found matching mainterm
+        if mainterm["title"] == user_mainterm:
+            # Execute the mainterm
+            # parser = Parser() # Doing this to make sure pcs_component_flag is reset to False. Flag reset is also done in execute functions during if self.pcs_component check. Can move this outside of while loop if makes more sense.
+            parser.execute_tree(mainterm)
+            found = True
+            break
+    if found:
+        user_flag = input("\nDo you want to search another term? (y/n) : ").lower()
+    else:
+        print("You're search did not match a mainterm. Please try again.")
