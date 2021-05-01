@@ -64,7 +64,7 @@ class PCS_Table:
                 # Search for pos code match at pos passed as arg
                 for code_container in row["label"]:
                     # Search for matching text to pcs component
-                    if code_container["__text"] == pcs_component:
+                    if pcs_component == code_container["__text"]:
                         # Return data to user
                         return {
                             "category": row["title"],
@@ -73,10 +73,10 @@ class PCS_Table:
         # If match is not found, raise error
         raise LookupError(f"Could not find a matching text value to '{pcs_component}' in pcs table passed as arg.")
 
-# Aggregating tables into one list
-tables = [table for table in PCS_tables["ICD10PCS.tabular"]["pcsTable"]]
+# # Aggregating tables into one list
+# tables = [table for table in PCS_tables["ICD10PCS.tabular"]["pcsTable"]]
 
-# Begin query
+# # Begin query
 query_tool = PCS_Table()
 # Manually coded for testing
 code_from_index = "0UJ"
@@ -84,10 +84,11 @@ code_from_index = "0UJ"
 # Return table object based on codes passed
 # Must have 3 or more codes available
 table = query_tool.get_table_from_string(code_from_index)
+pprint(table)
 # Returns dict with keys=position values (4-7) and values=the individual position code
 section_codes = query_tool.define_section_codes(code_from_index)
 
-print(query_tool.find_component_in_table("Vagina and Cul-de-sac", table))
+print(query_tool.find_component_in_table("Percutaneous Endoscopic", table))
 
 
 
